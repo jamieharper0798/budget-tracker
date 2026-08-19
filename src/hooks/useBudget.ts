@@ -1,13 +1,16 @@
 import { useCallback } from 'react';
-import type { Account, Bill, BudgetState, Category, Frequency, Settings } from '../types';
+import type { Account, Bill, BudgetState, Category, Frequency, Income, Settings } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { DEFAULT_CATEGORIES } from '../lib/categories';
+
+const DEFAULT_INCOME: Income = { amount: 0, frequency: 'monthly', customIntervalDays: null };
 
 const INITIAL_STATE: BudgetState = {
   bills: [],
   accounts: [],
   categories: DEFAULT_CATEGORIES,
   settings: { currency: '$' },
+  income: DEFAULT_INCOME,
 };
 
 export interface NewBillInput {
@@ -122,11 +125,19 @@ export function useBudget() {
     [setState],
   );
 
+  const updateIncome = useCallback(
+    (income: Partial<Income>) => {
+      setState((prev) => ({ ...prev, income: { ...(prev.income ?? DEFAULT_INCOME), ...income } }));
+    },
+    [setState],
+  );
+
   return {
     bills: state.bills,
     accounts: state.accounts,
     categories: state.categories,
     settings: state.settings,
+    income: state.income ?? DEFAULT_INCOME,
     addBill,
     updateBill,
     deleteBill,
@@ -137,5 +148,6 @@ export function useBudget() {
     addCategory,
     deleteCategory,
     updateSettings,
+    updateIncome,
   };
 }

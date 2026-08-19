@@ -3,6 +3,7 @@ import { useBudget } from './hooks/useBudget';
 import type { NewBillInput } from './hooks/useBudget';
 import { enrichBills } from './lib/derive';
 import type { EnrichedBill } from './lib/derive';
+import { IncomeCard } from './components/IncomeCard';
 import { SummaryCards } from './components/SummaryCards';
 import { UpcomingList } from './components/UpcomingList';
 import { BreakdownBars } from './components/BreakdownBars';
@@ -24,6 +25,7 @@ function App() {
     accounts,
     categories,
     settings,
+    income,
     addBill,
     updateBill,
     deleteBill,
@@ -33,6 +35,7 @@ function App() {
     deleteAccount,
     addCategory,
     updateSettings,
+    updateIncome,
   } = useBudget();
 
   const [formOpen, setFormOpen] = useState(false);
@@ -80,6 +83,11 @@ function App() {
         .reduce((sum, b) => sum + b.monthly, 0),
     }));
   }, [accounts, enriched]);
+
+  const monthlyBillsTotal = useMemo(
+    () => enriched.filter((b) => b.active).reduce((sum, b) => sum + b.monthly, 0),
+    [enriched],
+  );
 
   const billCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -169,6 +177,13 @@ function App() {
         </header>
 
         <main className="flex flex-1 flex-col gap-6">
+          <IncomeCard
+            income={income}
+            onChange={updateIncome}
+            monthlyBillsTotal={monthlyBillsTotal}
+            currency={settings.currency}
+          />
+
           <SummaryCards bills={enriched} currency={settings.currency} />
 
           <section>

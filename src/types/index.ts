@@ -34,9 +34,17 @@ export interface Settings {
   currency: string;
 }
 
+export interface Income {
+  amount: number;
+  frequency: Frequency;
+  /** Only used when frequency === 'custom'; number of days between paychecks. */
+  customIntervalDays: number | null;
+}
+
 export interface BudgetState {
   bills: Bill[];
   accounts: Account[];
   categories: Category[];
   settings: Settings;
+  income: Income;
 }

@@ -4,6 +4,7 @@ Track every subscription and recurring bill in one place: what it costs, which a
 
 ## Features
 
+- Enter your income (any frequency) and see what's left over each month after all active bills
 - Add subscriptions and bills with amount, frequency, account, category, and notes
 - Flexible billing cycles: weekly, every 2 weeks, monthly, every 3 months, yearly, or a custom number of days — the app computes each bill's next due date automatically
 - Dashboard with monthly total, yearly total, what's due in the next 7 days, and active bill count
