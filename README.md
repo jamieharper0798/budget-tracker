@@ -15,7 +15,7 @@ Track every subscription and recurring bill in one place: what it costs, which a
 - Pause/resume a bill without deleting it (e.g. a paused gym membership), and it drops out of totals while you decide
 - Search and filter by status, account, and category
 - Currency symbol picker ($, £, €, ¥, ₹, A$, C$)
-- Persisted to `localStorage` — no backend, no account required
+- Log in with email/password and your data syncs live across every device — powered by Firebase Auth + Firestore, with offline support (Firestore's local cache keeps the app usable offline and syncs once back online)
 - Installable PWA: manifest, offline-capable service worker, an in-app "Install App" button, and an update toast when a new version is deployed
 
 ## Getting started
@@ -24,6 +24,24 @@ Track every subscription and recurring bill in one place: what it costs, which a
 npm install
 npm run dev
 ```
+
+Without a configured Firebase project (see below), the app shows a "Firebase isn't set up yet" screen instead of the login form.
+
+## Login & multi-device sync (Firebase)
+
+The app requires a free Firebase project to handle login and to store your data so it syncs across devices. One-time setup:
+
+1. Go to the [Firebase console](https://console.firebase.google.com), create a project (the free Spark plan is enough).
+2. **Build → Authentication → Get started → Sign-in method** — enable **Email/Password**.
+3. **Build → Firestore Database → Create database** — any region is fine; start in production mode.
+4. Open the **Rules** tab and paste in the contents of [`firestore.rules`](./firestore.rules) (restricts each account to its own data), then **Publish**. If you have the [Firebase CLI](https://firebase.google.com/docs/cli) installed, `firebase deploy --only firestore:rules` does the same thing.
+5. **Project settings (gear icon) → General → Your apps → Add app → Web** (`</>` icon) — register an app (no need to set up Firebase Hosting). Copy the `firebaseConfig` object it gives you.
+6. Paste those values into [`src/lib/firebaseConfig.ts`](./src/lib/firebaseConfig.ts), replacing the `YOUR_...` placeholders. These values aren't secret — they identify the project, not a credential — so it's safe to commit them.
+7. Commit and push; the site redeploys automatically and the login screen goes live.
+
+If you were already using this app before login was added, the first time you log in on the device that has your existing data, it's automatically imported into your new account.
+
+## Scripts
 
 ## Scripts
 

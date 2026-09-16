@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { useAuth } from './hooks/useAuth';
 import { useBudget } from './hooks/useBudget';
 import type { NewBillInput } from './hooks/useBudget';
 import { enrichBills } from './lib/derive';
 import type { EnrichedBill } from './lib/derive';
+import { AuthScreen } from './components/AuthScreen';
 import { IncomeCard } from './components/IncomeCard';
 import { SummaryCards } from './components/SummaryCards';
 import { UpcomingList } from './components/UpcomingList';
@@ -19,8 +21,32 @@ import { UpdateToast } from './components/UpdateToast';
 
 const CURRENCIES = ['$', '£', '€', '¥', '₹', 'A$', 'C$'];
 
+function LoadingScreen({ label }: { label: string }) {
+  return (
+    <div className="bg-ledger flex min-h-screen items-center justify-center">
+      <p className="text-sm text-white/40">{label}</p>
+    </div>
+  );
+}
+
 function App() {
+  const { user, loading, signUp, logIn, logOut, resetPassword } = useAuth();
+
+  if (loading) return <LoadingScreen label="Loading…" />;
+  if (!user) return <AuthScreen onSignUp={signUp} onLogIn={logIn} onResetPassword={resetPassword} />;
+
+  return <Dashboard uid={user.uid} email={user.email} onLogOut={logOut} />;
+}
+
+interface DashboardProps {
+  uid: string;
+  email: string | null;
+  onLogOut: () => void;
+}
+
+function Dashboard({ uid, email, onLogOut }: DashboardProps) {
   const {
+    ready,
     bills,
     accounts,
     categories,
@@ -36,12 +62,13 @@ function App() {
     addCategory,
     updateSettings,
     updateIncome,
-  } = useBudget();
+  } = useBudget(uid);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<EnrichedBill | null>(null);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [currencyOpen, setCurrencyOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('all');
@@ -123,6 +150,8 @@ function App() {
     }
   };
 
+  if (!ready) return <LoadingScreen label="Syncing…" />;
+
   return (
     <div className="bg-ledger min-h-screen">
       <UpdateToast />
@@ -173,6 +202,30 @@ function App() {
                 <path d="M2 10h20" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen((v) => !v)}
+                className="rounded-full p-2 text-white/50 transition hover:bg-white/10 hover:text-white"
+                title={email ?? 'Account'}
+                aria-label="Account"
+              >
+                <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={2}>
+                  <circle cx="12" cy="8" r="4" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M4 20c0-4 3.5-6 8-6s8 2 8 6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              {menuOpen && (
+                <div className="glass animate-rise absolute right-0 top-full z-10 mt-2 w-48 rounded-xl p-2">
+                  {email && <p className="truncate px-2 py-1 text-[11px] text-white/40">{email}</p>}
+                  <button
+                    onClick={onLogOut}
+                    className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-medium text-white/70 hover:bg-white/10 hover:text-white"
+                  >
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

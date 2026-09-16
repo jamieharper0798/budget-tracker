@@ -1,6 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import type { Account, Bill, BudgetState, Category, Frequency, Income, Settings } from '../types';
-import { useLocalStorage } from './useLocalStorage';
+import { db } from '../lib/firebase';
 import { DEFAULT_CATEGORIES } from '../lib/categories';
 
 const DEFAULT_INCOME: Income = { amount: 0, frequency: 'monthly', customIntervalDays: null };
@@ -13,6 +14,28 @@ const INITIAL_STATE: BudgetState = {
   income: DEFAULT_INCOME,
 };
 
+/** Data from the pre-login, localStorage-only version of this app, adopted on first sync. */
+const LEGACY_LOCAL_STORAGE_KEY = 'budget-tracker:v1';
+
+function readLegacyLocalState(): BudgetState | null {
+  try {
+    const stored = window.localStorage.getItem(LEGACY_LOCAL_STORAGE_KEY);
+    return stored ? (JSON.parse(stored) as BudgetState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalize(data: Partial<BudgetState> | undefined): BudgetState {
+  return {
+    bills: data?.bills ?? [],
+    accounts: data?.accounts ?? [],
+    categories: data?.categories ?? DEFAULT_CATEGORIES,
+    settings: data?.settings ?? { currency: '$' },
+    income: data?.income ?? DEFAULT_INCOME,
+  };
+}
+
 export interface NewBillInput {
   name: string;
   amount: number;
@@ -24,120 +47,153 @@ export interface NewBillInput {
   notes: string;
 }
 
-export function useBudget() {
-  const [state, setState] = useLocalStorage<BudgetState>('budget-tracker:v1', INITIAL_STATE);
+export function useBudget(uid: string) {
+  const [state, setState] = useState<BudgetState>(INITIAL_STATE);
+  const [ready, setReady] = useState(false);
+  const stateRef = useRef(state);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
+  useEffect(() => {
+    if (!db) return;
+    setReady(false);
+    const ref = doc(db, 'users', uid);
+    const unsubscribe = onSnapshot(
+      ref,
+      (snap) => {
+        if (snap.exists()) {
+          setState(normalize(snap.data() as Partial<BudgetState>));
+        } else {
+          const seed = normalize(readLegacyLocalState() ?? undefined);
+          setDoc(ref, seed).catch(() => {});
+          setState(seed);
+        }
+        setReady(true);
+      },
+      () => setReady(true),
+    );
+    return unsubscribe;
+  }, [uid]);
+
+  const commit = useCallback(
+    (updater: (prev: BudgetState) => BudgetState) => {
+      const next = updater(stateRef.current);
+      stateRef.current = next;
+      setState(next);
+      if (db) setDoc(doc(db, 'users', uid), next).catch(() => {});
+    },
+    [uid],
+  );
 
   const addBill = useCallback(
     (input: NewBillInput) => {
-      const bill: Bill = {
-        id: crypto.randomUUID(),
-        ...input,
-        active: true,
-        createdAt: Date.now(),
-      };
-      setState((prev) => ({ ...prev, bills: [bill, ...prev.bills] }));
+      const bill: Bill = { id: crypto.randomUUID(), ...input, active: true, createdAt: Date.now() };
+      commit((prev) => ({ ...prev, bills: [bill, ...prev.bills] }));
       return bill.id;
     },
-    [setState],
+    [commit],
   );
 
   const updateBill = useCallback(
     (id: string, input: NewBillInput) => {
-      setState((prev) => ({
+      commit((prev) => ({
         ...prev,
         bills: prev.bills.map((b) => (b.id === id ? { ...b, ...input } : b)),
       }));
     },
-    [setState],
+    [commit],
   );
 
   const deleteBill = useCallback(
     (id: string) => {
-      setState((prev) => ({ ...prev, bills: prev.bills.filter((b) => b.id !== id) }));
+      commit((prev) => ({ ...prev, bills: prev.bills.filter((b) => b.id !== id) }));
     },
-    [setState],
+    [commit],
   );
 
   const toggleBillActive = useCallback(
     (id: string) => {
-      setState((prev) => ({
+      commit((prev) => ({
         ...prev,
         bills: prev.bills.map((b) => (b.id === id ? { ...b, active: !b.active } : b)),
       }));
     },
-    [setState],
+    [commit],
   );
 
   const addAccount = useCallback(
     (name: string, color: string) => {
       const account: Account = { id: crypto.randomUUID(), name: name.trim(), color };
-      setState((prev) => ({ ...prev, accounts: [...prev.accounts, account] }));
+      commit((prev) => ({ ...prev, accounts: [...prev.accounts, account] }));
       return account.id;
     },
-    [setState],
+    [commit],
   );
 
   const updateAccount = useCallback(
     (id: string, name: string, color: string) => {
-      setState((prev) => ({
+      commit((prev) => ({
         ...prev,
         accounts: prev.accounts.map((a) => (a.id === id ? { ...a, name: name.trim(), color } : a)),
       }));
     },
-    [setState],
+    [commit],
   );
 
   const deleteAccount = useCallback(
     (id: string) => {
-      setState((prev) => ({
+      commit((prev) => ({
         ...prev,
         accounts: prev.accounts.filter((a) => a.id !== id),
         bills: prev.bills.map((b) => (b.accountId === id ? { ...b, accountId: null } : b)),
       }));
     },
-    [setState],
+    [commit],
   );
 
   const addCategory = useCallback(
     (name: string, icon: string, color: string) => {
       const category: Category = { id: crypto.randomUUID(), name: name.trim(), icon, color };
-      setState((prev) => ({ ...prev, categories: [...prev.categories, category] }));
+      commit((prev) => ({ ...prev, categories: [...prev.categories, category] }));
       return category.id;
     },
-    [setState],
+    [commit],
   );
 
   const deleteCategory = useCallback(
     (id: string) => {
-      setState((prev) => ({
+      commit((prev) => ({
         ...prev,
         categories: prev.categories.filter((c) => c.id !== id),
         bills: prev.bills.map((b) => (b.categoryId === id ? { ...b, categoryId: null } : b)),
       }));
     },
-    [setState],
+    [commit],
   );
 
   const updateSettings = useCallback(
     (settings: Partial<Settings>) => {
-      setState((prev) => ({ ...prev, settings: { ...prev.settings, ...settings } }));
+      commit((prev) => ({ ...prev, settings: { ...prev.settings, ...settings } }));
     },
-    [setState],
+    [commit],
   );
 
   const updateIncome = useCallback(
     (income: Partial<Income>) => {
-      setState((prev) => ({ ...prev, income: { ...(prev.income ?? DEFAULT_INCOME), ...income } }));
+      commit((prev) => ({ ...prev, income: { ...prev.income, ...income } }));
     },
-    [setState],
+    [commit],
   );
 
   return {
+    ready,
     bills: state.bills,
     accounts: state.accounts,
     categories: state.categories,
     settings: state.settings,
-    income: state.income ?? DEFAULT_INCOME,
+    income: state.income,
     addBill,
     updateBill,
     deleteBill,
