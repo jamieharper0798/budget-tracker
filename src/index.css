@@ -71,6 +71,16 @@ input[type='date']::-webkit-calendar-picker-indicator {
   opacity: 0.6;
 }
 
+/* Keep content clear of the notch/status bar and home indicator when installed as a PWA. */
+.app-shell {
+  padding-top: calc(2rem + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+}
+
+.safe-bottom {
+  padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+}
+
 @keyframes rise {
   from {
     opacity: 0;

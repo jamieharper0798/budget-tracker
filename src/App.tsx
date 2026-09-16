@@ -156,7 +156,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     <div className="bg-ledger min-h-screen">
       <UpdateToast />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 pb-24 pt-8 sm:px-6">
+      <div className="app-shell mx-auto flex min-h-screen w-full max-w-3xl flex-col px-4 sm:px-6">
         <header className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">💰</span>

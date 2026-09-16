@@ -13,7 +13,7 @@ export function Modal({ open, onClose, title, children }: Props) {
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/60 backdrop-blur-sm sm:items-center sm:p-4">
       <div
-        className="glass animate-rise max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-[#0c141b] p-5 sm:max-w-md sm:rounded-3xl sm:p-6"
+        className="glass animate-rise max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-[#0c141b] p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom,0px))] sm:max-w-md sm:rounded-3xl sm:p-6"
         role="dialog"
         aria-modal="true"
       >
