@@ -7,12 +7,12 @@
  * Firebase console → Project settings → Your apps → SDK setup and config.
  */
 export const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
-  messagingSenderId: 'YOUR_SENDER_ID',
-  appId: 'YOUR_APP_ID',
+  apiKey: 'AIzaSyBWkQ6fni7tGpCN-tsgd2cwWt0U1vDdcXo',
+  authDomain: 'budget-tracker-a881d.firebaseapp.com',
+  projectId: 'budget-tracker-a881d',
+  storageBucket: 'budget-tracker-a881d.firebasestorage.app',
+  messagingSenderId: '978276813707',
+  appId: '1:978276813707:web:0141009a4eba5665dabd8e',
 };
 
 export const firebaseConfigured = firebaseConfig.apiKey !== 'YOUR_API_KEY';
