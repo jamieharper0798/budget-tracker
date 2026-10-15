@@ -33,6 +33,9 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
         navigateFallback: 'index.html',
+        // The habit tracker is a separate app served from /habits/ with its own service worker.
+        navigateFallbackDenylist: [/\/habits(\/|$)/],
+        globIgnores: ['habits/**'],
       },
     }),
   ],
