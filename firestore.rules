@@ -1,7 +1,12 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Ledger (budget tracker)
     match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    // Momentum (habit tracker, /habits/)
+    match /habits/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }

@@ -1,5 +1,7 @@
 # Ledger — Budget & Bill Tracker
 
+> This repo also hosts **Momentum**, a habit tracker that uses the same login. See [`habits/README.md`](./habits/README.md).
+
 Track every subscription and recurring bill in one place: what it costs, which account it's paid from, when it's due, and how it adds up.
 
 ## Features
