@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { Habit, Log, TimeOfDay } from '../types';
 import type { HabitInput } from '../hooks/useTracker';
 import type { Stats } from '../lib/game';
-import { dayStatus, levelTitle, xpForLevel } from '../lib/game';
+import { dayProgress, levelTitle, xpForLevel } from '../lib/game';
 import { countOn, currentStreak, doneThisWeek, isScheduled } from '../lib/habits';
 import { prettyDate } from '../lib/dates';
 import { TEMPLATES } from '../lib/templates';
@@ -46,7 +46,7 @@ function greeting(): string {
 function motivation(done: number, due: number): string {
   if (due === 0) return 'Nothing scheduled — enjoy the rest.';
   if (done === 0) return 'Let’s grab the first win. 💪';
-  if (done === due) return 'Perfect day. You’re on fire!';
+  if (done === due) return 'All done for today. You’re on fire!';
   const left = due - done;
   if (done / due >= 0.5) return `Only ${left} to go — finish strong!`;
   return `${left} to go. Keep the momentum!`;
@@ -54,7 +54,7 @@ function motivation(done: number, due: number): string {
 
 export function TodayScreen(p: Props) {
   const visible = p.habits.filter((h) => !h.archived && isScheduled(h, p.day));
-  const status = dayStatus(p.habits, p.log, p.day);
+  const status = dayProgress(p.habits, p.log, p.day);
   const pct = status.due ? status.done / status.due : 0;
   const levelStart = xpForLevel(p.stats.level);
   const levelEnd = xpForLevel(p.stats.level + 1);

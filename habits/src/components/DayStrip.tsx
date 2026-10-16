@@ -1,6 +1,6 @@
 import type { Habit, Log } from '../types';
 import { addDays, fromKey, WEEKDAY_LETTER } from '../lib/dates';
-import { dayStatus } from '../lib/game';
+import { dayProgress, dayStatus } from '../lib/game';
 import { ProgressRing } from './ProgressRing';
 
 interface Props {
@@ -16,7 +16,7 @@ export function DayStrip({ habits, log, today, selected, onSelect }: Props) {
   return (
     <div className="flex justify-between gap-1">
       {days.map((d) => {
-        const s = dayStatus(habits, log, d);
+        const s = { ...dayProgress(habits, log, d), perfect: dayStatus(habits, log, d).perfect };
         const isSel = d === selected;
         return (
           <button

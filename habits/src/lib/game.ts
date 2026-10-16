@@ -1,6 +1,6 @@
 import type { Habit, Log } from '../types';
 import { addDays } from './dates';
-import { bestStreak, currentStreak, isDone, isSkipped, isStrictlyDue } from './habits';
+import { bestStreak, currentStreak, doneThisWeek, isDone, isScheduled, isSkipped, isStrictlyDue } from './habits';
 
 export const XP_PER_CHECKIN = 10;
 export const XP_PER_PERFECT_DAY = 20;
@@ -36,6 +36,27 @@ export function dayStatus(habits: Habit[], log: Log, day: string): { due: number
     }
   }
   return { due, done, perfect: due > 0 && done === due && done + skipped > 0 };
+}
+
+/**
+ * Progress shown for a day in the Today ring and day strip. Unlike `dayStatus` (which decides
+ * perfect days and XP), this also counts weekly habits until that week's target is already met,
+ * so a "3× a week" habit shows up as something to do — and as done once checked in.
+ */
+export function dayProgress(habits: Habit[], log: Log, day: string): { due: number; done: number } {
+  let due = 0;
+  let done = 0;
+  for (const h of habits) {
+    if (h.archived || !isScheduled(h, day) || isSkipped(log, day, h.id)) continue;
+    const doneToday = isDone(h, log, day);
+    if (h.schedule.kind === 'weekly' && !doneToday) {
+      const metBefore = doneThisWeek(h, log, day) >= h.schedule.timesPerWeek;
+      if (metBefore) continue;
+    }
+    due++;
+    if (doneToday) done++;
+  }
+  return { due, done };
 }
 
 export interface Stats {
