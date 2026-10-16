@@ -11,4 +11,4 @@ export const TEMPLATES: HabitInput[] = [
   { name: 'No social media', emoji: '📵', color: 'pink', schedule: { kind: 'weekdays', days: [1, 2, 3, 4, 5] }, target: 1, unit: '', timeOfDay: 'anytime' },
 ];
 
-export const EMOJIS = ['💧', '🏃', '📚', '🧘', '😴', '🥦', '✍️', '📵', '💪', '🚶', '🧠', '🎸', '🧹', '💊', '🌱', '☀️', '🍎', '🚴', '🙏', '💰', '🎨', '🗣️', '🦷', '❤️'];
+export const EMOJIS = ['💧', '🏋️', '🏃', '📚', '🧘', '😴', '🥦', '✍️', '📵', '💪', '🚶', '🧠', '🎸', '🧹', '💊', '🌱', '☀️', '🍎', '🚴', '🙏', '💰', '🎨', '🗣️', '🦷', '❤️'];
