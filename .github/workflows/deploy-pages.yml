@@ -1,4 +1,4 @@
-name: Deploy Ledger + Momentum to GitHub Pages
+name: Deploy Ledgerly + Momentum to GitHub Pages
 
 on:
   push:

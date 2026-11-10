@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
-import type { Account, Bill, BudgetState, Category, Frequency, Income, Settings } from '../types';
+import type { Account, Bill, BudgetState, Category, Deposit, Frequency, Income, SavingsPot, Settings } from '../types';
 import { db } from '../lib/firebase';
 import { DEFAULT_CATEGORIES } from '../lib/categories';
 
@@ -12,6 +12,9 @@ const INITIAL_STATE: BudgetState = {
   categories: DEFAULT_CATEGORIES,
   settings: { currency: '$' },
   income: DEFAULT_INCOME,
+  pots: [],
+  deposits: [],
+  payments: [],
 };
 
 /** Data from the pre-login, localStorage-only version of this app, adopted on first sync. */
@@ -33,6 +36,9 @@ function normalize(data: Partial<BudgetState> | undefined): BudgetState {
     categories: data?.categories ?? DEFAULT_CATEGORIES,
     settings: data?.settings ?? { currency: '$' },
     income: data?.income ?? DEFAULT_INCOME,
+    pots: data?.pots ?? [],
+    deposits: data?.deposits ?? [],
+    payments: data?.payments ?? [],
   };
 }
 
@@ -187,6 +193,67 @@ export function useBudget(uid: string) {
     [commit],
   );
 
+  const togglePaid = useCallback(
+    (billId: string, period: string) => {
+      commit((prev) => {
+        const isPaid = prev.payments.some((p) => p.billId === billId && p.period === period);
+        return {
+          ...prev,
+          payments: isPaid
+            ? prev.payments.filter((p) => !(p.billId === billId && p.period === period))
+            : [...prev.payments, { billId, period }],
+        };
+      });
+    },
+    [commit],
+  );
+
+  const addPot = useCallback(
+    (input: Omit<SavingsPot, 'id' | 'createdAt'>) => {
+      const pot: SavingsPot = { id: crypto.randomUUID(), ...input, createdAt: Date.now() };
+      commit((prev) => ({ ...prev, pots: [...prev.pots, pot] }));
+      return pot.id;
+    },
+    [commit],
+  );
+
+  const updatePot = useCallback(
+    (id: string, input: Omit<SavingsPot, 'id' | 'createdAt'>) => {
+      commit((prev) => ({
+        ...prev,
+        pots: prev.pots.map((p) => (p.id === id ? { ...p, ...input } : p)),
+      }));
+    },
+    [commit],
+  );
+
+  const deletePot = useCallback(
+    (id: string) => {
+      commit((prev) => ({
+        ...prev,
+        pots: prev.pots.filter((p) => p.id !== id),
+        deposits: prev.deposits.filter((d) => d.potId !== id),
+      }));
+    },
+    [commit],
+  );
+
+  const addDeposit = useCallback(
+    (potId: string, amount: number, date: string, note: string) => {
+      const deposit: Deposit = { id: crypto.randomUUID(), potId, amount, date, note, createdAt: Date.now() };
+      commit((prev) => ({ ...prev, deposits: [deposit, ...prev.deposits] }));
+      return deposit.id;
+    },
+    [commit],
+  );
+
+  const deleteDeposit = useCallback(
+    (id: string) => {
+      commit((prev) => ({ ...prev, deposits: prev.deposits.filter((d) => d.id !== id) }));
+    },
+    [commit],
+  );
+
   return {
     ready,
     bills: state.bills,
@@ -194,6 +261,9 @@ export function useBudget(uid: string) {
     categories: state.categories,
     settings: state.settings,
     income: state.income,
+    pots: state.pots,
+    deposits: state.deposits,
+    payments: state.payments,
     addBill,
     updateBill,
     deleteBill,
@@ -205,5 +275,11 @@ export function useBudget(uid: string) {
     deleteCategory,
     updateSettings,
     updateIncome,
+    togglePaid,
+    addPot,
+    updatePot,
+    deletePot,
+    addDeposit,
+    deleteDeposit,
   };
 }

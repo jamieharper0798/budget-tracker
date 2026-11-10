@@ -17,6 +17,9 @@ interface Props {
 
 const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly', 'custom'];
 
+const inputClass =
+  'w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none focus:border-ink/20 focus:bg-surface';
+
 export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAccount, onAddCategory }: Props) {
   const [name, setName] = useState(bill?.name ?? '');
   const [amount, setAmount] = useState(bill ? String(bill.amount) : '');
@@ -78,13 +81,10 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
     });
   };
 
-  const inputClass =
-    'w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/30 outline-none focus:border-emerald-400/50 focus:bg-white/8';
-
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-white/50">Name</label>
+        <label className="mb-1.5 block text-xs font-medium text-muted">Name</label>
         <input
           className={inputClass}
           placeholder="e.g. Netflix, Rent, Car insurance"
@@ -96,7 +96,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-white/50">Amount</label>
+          <label className="mb-1.5 block text-xs font-medium text-muted">Amount</label>
           <input
             className={inputClass}
             type="number"
@@ -108,7 +108,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
           />
         </div>
         <div>
-          <label className="mb-1.5 block text-xs font-medium text-white/50">
+          <label className="mb-1.5 block text-xs font-medium text-muted">
             {frequency === 'monthly' || frequency === 'quarterly' || frequency === 'yearly'
               ? 'Next payment date'
               : 'First payment date'}
@@ -123,15 +123,15 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-white/50">Frequency</label>
+        <label className="mb-1.5 block text-xs font-medium text-muted">Frequency</label>
         <div className="grid grid-cols-3 gap-1.5">
           {FREQUENCIES.map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setFrequency(f)}
-              className={`rounded-lg px-2 py-2 text-xs font-medium transition ${
-                frequency === f ? 'bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/40' : 'bg-white/5 text-white/50 hover:bg-white/10'
+              className={`rounded-[10px] px-2 py-2 text-xs font-medium transition ${
+                frequency === f ? 'bg-accent text-ink' : 'bg-surface-2 text-muted hover:bg-track'
               }`}
             >
               {FREQUENCY_LABELS[f]}
@@ -140,7 +140,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
         </div>
         {frequency === 'custom' && (
           <div className="mt-2 flex items-center gap-2">
-            <span className="text-xs text-white/50">Every</span>
+            <span className="text-xs text-muted">Every</span>
             <input
               className={`${inputClass} w-20`}
               type="number"
@@ -148,13 +148,13 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
               value={customDays}
               onChange={(e) => setCustomDays(e.target.value)}
             />
-            <span className="text-xs text-white/50">days</span>
+            <span className="text-xs text-muted">days</span>
           </div>
         )}
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-white/50">Account it's paid from</label>
+        <label className="mb-1.5 block text-xs font-medium text-muted">Account it's paid from</label>
         {!addingAccount ? (
           <div className="flex items-center gap-2">
             <select
@@ -172,13 +172,13 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
             <button
               type="button"
               onClick={() => setAddingAccount(true)}
-              className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs font-medium text-white/60 hover:bg-white/10"
+              className="shrink-0 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-xs font-medium text-muted hover:bg-track"
             >
               + New
             </button>
           </div>
         ) : (
-          <div className="glass rounded-xl p-3">
+          <div className="rounded-xl bg-surface-2 p-3">
             <div className="flex gap-2">
               <input
                 className={inputClass}
@@ -189,14 +189,14 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
               <button
                 type="button"
                 onClick={handleAddAccount}
-                className="shrink-0 rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-semibold text-white"
+                className="shrink-0 rounded-xl bg-ink px-3 py-2.5 text-xs font-semibold text-white"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setAddingAccount(false)}
-                className="shrink-0 rounded-xl border border-white/10 px-3 py-2.5 text-xs text-white/50"
+                className="shrink-0 rounded-xl border border-line px-3 py-2.5 text-xs text-muted"
               >
                 Cancel
               </button>
@@ -207,7 +207,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
                   key={c}
                   type="button"
                   onClick={() => setNewAccountColor(c)}
-                  className={`h-5 w-5 rounded-full ring-2 ${newAccountColor === c ? 'ring-white' : 'ring-transparent'}`}
+                  className={`h-5 w-5 rounded-full ring-2 ring-offset-1 ring-offset-surface-2 ${newAccountColor === c ? 'ring-ink' : 'ring-transparent'}`}
                   style={{ backgroundColor: c }}
                   aria-label={`Color ${c}`}
                 />
@@ -218,7 +218,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-white/50">Category</label>
+        <label className="mb-1.5 block text-xs font-medium text-muted">Category</label>
         {!addingCategory ? (
           <div className="flex items-center gap-2">
             <select
@@ -236,13 +236,13 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
             <button
               type="button"
               onClick={() => setAddingCategory(true)}
-              className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-xs font-medium text-white/60 hover:bg-white/10"
+              className="shrink-0 rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-xs font-medium text-muted hover:bg-track"
             >
               + New
             </button>
           </div>
         ) : (
-          <div className="glass rounded-xl p-3">
+          <div className="rounded-xl bg-surface-2 p-3">
             <div className="flex gap-2">
               <input
                 className={`${inputClass} w-14 text-center`}
@@ -260,14 +260,14 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
               <button
                 type="button"
                 onClick={handleAddCategory}
-                className="shrink-0 rounded-xl bg-emerald-500 px-3 py-2.5 text-xs font-semibold text-white"
+                className="shrink-0 rounded-xl bg-ink px-3 py-2.5 text-xs font-semibold text-white"
               >
                 Add
               </button>
               <button
                 type="button"
                 onClick={() => setAddingCategory(false)}
-                className="shrink-0 rounded-xl border border-white/10 px-3 py-2.5 text-xs text-white/50"
+                className="shrink-0 rounded-xl border border-line px-3 py-2.5 text-xs text-muted"
               >
                 Cancel
               </button>
@@ -278,7 +278,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
                   key={c}
                   type="button"
                   onClick={() => setNewCategoryColor(c)}
-                  className={`h-5 w-5 rounded-full ring-2 ${newCategoryColor === c ? 'ring-white' : 'ring-transparent'}`}
+                  className={`h-5 w-5 rounded-full ring-2 ring-offset-1 ring-offset-surface-2 ${newCategoryColor === c ? 'ring-ink' : 'ring-transparent'}`}
                   style={{ backgroundColor: c }}
                   aria-label={`Color ${c}`}
                 />
@@ -289,7 +289,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
       </div>
 
       <div>
-        <label className="mb-1.5 block text-xs font-medium text-white/50">Notes (optional)</label>
+        <label className="mb-1.5 block text-xs font-medium text-muted">Notes (optional)</label>
         <textarea
           className={`${inputClass} min-h-16 resize-none`}
           placeholder="Plan details, cancellation link, etc."
@@ -298,20 +298,17 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
         />
       </div>
 
-      {error && <p className="text-xs text-rose-400">{error}</p>}
+      {error && <p className="text-xs text-alert">{error}</p>}
 
       <div className="mt-1 flex gap-2">
         <button
           type="button"
           onClick={onCancel}
-          className="flex-1 rounded-xl border border-white/10 py-2.5 text-sm font-semibold text-white/60 hover:bg-white/5"
+          className="flex-1 rounded-xl border border-line py-2.5 text-sm font-semibold text-muted hover:bg-surface-2"
         >
           Cancel
         </button>
-        <button
-          type="submit"
-          className="flex-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/20"
-        >
+        <button type="submit" className="flex-1 rounded-xl bg-accent py-2.5 text-sm font-semibold text-ink">
           {bill ? 'Save changes' : 'Add bill'}
         </button>
       </div>

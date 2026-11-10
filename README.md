@@ -1,21 +1,18 @@
-# Ledger — Budget & Bill Tracker
+# Ledgerly — Bills & Savings Tracker
 
 > This repo also hosts **Momentum**, a habit tracker that uses the same login. See [`habits/README.md`](./habits/README.md).
 
-Track every subscription and recurring bill in one place: what it costs, which account it's paid from, when it's due, and how it adds up.
+A personal bills & savings dashboard: what's due, what's left over each month, and how your savings goals are coming along. Everything is entered manually — there's no bank connection.
 
 ## Features
 
-- Enter your income (any frequency) and see what's left over each month after all active bills
-- Add subscriptions and bills with amount, frequency, account, category, and notes
-- Flexible billing cycles: weekly, every 2 weeks, monthly, every 3 months, yearly, or a custom number of days — the app computes each bill's next due date automatically
-- Dashboard with monthly total, yearly total, what's due in the next 7 days, and active bill count
-- Upcoming payments list for the next 30 days, with overdue and due-soon highlighting
-- Spend breakdowns by category and by account (with normalized monthly cost, regardless of billing frequency)
-- Manage accounts (e.g. "Chase Checking", "Amex") with color tags — add one inline while creating a bill, or manage them fully from the accounts screen
-- Built-in categories (Streaming, Software, Utilities, Insurance, etc.) plus your own custom categories with emoji + color
-- Pause/resume a bill without deleting it (e.g. a paused gym membership), and it drops out of totals while you decide
-- Search and filter by status, account, and category
+- **Overview dashboard** — a monthly "left over after bills & savings" summary, a paid/unpaid ring for the bills still owed this month, next-due and total-saved stat cards, a category breakdown donut, an upcoming-payments list, savings pots with progress rings, and a savings growth chart with a recent-deposits log
+- Enter your income (any frequency) and see what's left over each month after bills and planned savings contributions
+- Add subscriptions and bills with amount, frequency, account, category, and notes; flexible billing cycles (weekly, every 2 weeks, monthly, every 3 months, yearly, or a custom number of days)
+- Mark bills paid/unpaid per month, with overdue highlighting, and step through past/future months
+- Manage accounts (e.g. "Chase Checking", "Amex") with color tags, and categories with emoji + color
+- Pause/resume a bill without deleting it
+- Create savings pots with a goal, target date, and monthly contribution; log deposits against any pot
 - Currency symbol picker ($, £, €, ¥, ₹, A$, C$)
 - Log in with email/password and your data syncs live across every device — powered by Firebase Auth + Firestore, with offline support (Firestore's local cache keeps the app usable offline and syncs once back online)
 - Installable PWA: manifest, offline-capable service worker, an in-app "Install App" button, and an update toast when a new version is deployed
@@ -42,8 +39,6 @@ The app requires a free Firebase project to handle login and to store your data 
 7. Commit and push; the site redeploys automatically and the login screen goes live.
 
 If you were already using this app before login was added, the first time you log in on the device that has your existing data, it's automatically imported into your new account.
-
-## Scripts
 
 ## Scripts
 

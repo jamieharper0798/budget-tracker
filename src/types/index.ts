@@ -41,10 +41,40 @@ export interface Income {
   customIntervalDays: number | null;
 }
 
+export interface SavingsPot {
+  id: string;
+  name: string;
+  target: number;
+  /** ISO date 'YYYY-MM-DD', or null if no target date is set. */
+  targetDate: string | null;
+  monthlyContribution: number;
+  color: string;
+  createdAt: number;
+}
+
+export interface Deposit {
+  id: string;
+  potId: string;
+  amount: number;
+  /** ISO date 'YYYY-MM-DD'. */
+  date: string;
+  note: string;
+  createdAt: number;
+}
+
+export interface BillPayment {
+  billId: string;
+  /** 'YYYY-MM' — presence of a (billId, period) pair means that bill is marked paid for that month. */
+  period: string;
+}
+
 export interface BudgetState {
   bills: Bill[];
   accounts: Account[];
   categories: Category[];
   settings: Settings;
   income: Income;
+  pots: SavingsPot[];
+  deposits: Deposit[];
+  payments: BillPayment[];
 }

@@ -10,17 +10,14 @@ export function UpdateToast() {
 
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4">
-      <div className="glass animate-rise pointer-events-auto flex items-center gap-3 rounded-full py-2 pl-4 pr-2 text-sm text-white shadow-xl shadow-black/30">
+      <div className="animate-rise card pointer-events-auto flex items-center gap-3 !rounded-full py-2 pl-4 pr-2 text-sm text-ink">
         <span>A new version is ready</span>
-        <button
-          onClick={() => updateServiceWorker(true)}
-          className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 text-xs font-semibold"
-        >
+        <button onClick={() => updateServiceWorker(true)} className="rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-ink">
           Refresh
         </button>
         <button
           onClick={() => setNeedRefresh(false)}
-          className="rounded-full p-1.5 text-white/40 hover:text-white"
+          className="rounded-full p-1.5 text-muted hover:text-ink"
           aria-label="Dismiss"
         >
           ✕

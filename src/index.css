@@ -1,12 +1,37 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Outfit", system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+
+  --color-bg: #eef0ec;
+  --color-surface: #ffffff;
+  --color-surface-2: #f3f4f1;
+  --color-line: #f0f1ee;
+  --color-track: #eceeea;
+
+  --color-ink: #0e1116;
+  --color-ink-2: #1a1f27;
+  --color-ink-line: #2e343d;
+  --color-muted: #5f6672;
+  --color-muted-2: #4a515c;
+  --color-muted-on-ink: #a9b0ba;
+
+  --color-accent: #c9ef4a;
+  --color-violet: #6e56cf;
+  --color-violet-soft: #b9a8f5;
+  --color-peach: #f5a97c;
+  --color-sky: #7cc4f5;
+
+  --color-ok-bg: #eef8d2;
+  --color-ok-fg: #3b4a0b;
+  --color-warn-bg: #fdebdd;
+  --color-warn-fg: #8a3a06;
+  --color-alert: #e8590c;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 * {
@@ -22,14 +47,15 @@ body,
 body {
   margin: 0;
   font-family: var(--font-body);
-  background: #081016;
-  color: #eaf2f4;
+  background: var(--color-bg);
+  color: var(--color-ink);
   overflow-x: hidden;
+  font-variant-numeric: tabular-nums;
 }
 
 ::selection {
-  background: #10b981;
-  color: #06110d;
+  background: var(--color-accent);
+  color: var(--color-ink);
 }
 
 /* Scrollbar */
@@ -40,40 +66,36 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(16, 185, 129, 0.3);
+  background: rgba(14, 17, 22, 0.15);
   border-radius: 999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(16, 185, 129, 0.5);
+  background: rgba(14, 17, 22, 0.25);
 }
 
-.glass {
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.06),
-    rgba(255, 255, 255, 0.02)
-  );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+.card {
+  background: var(--color-surface);
+  border-radius: 28px;
+  box-shadow:
+    0 1px 2px rgba(14, 17, 22, 0.04),
+    0 8px 24px rgba(14, 17, 22, 0.04);
 }
 
-.bg-ledger {
-  background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(16, 185, 129, 0.22), transparent 60%),
-    radial-gradient(900px 500px at 110% 0%, rgba(56, 189, 248, 0.16), transparent 55%),
-    radial-gradient(800px 600px at 50% 120%, rgba(245, 158, 11, 0.1), transparent 55%),
-    #081016;
+.card-sm {
+  background: var(--color-surface);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 2px rgba(14, 17, 22, 0.04),
+    0 8px 24px rgba(14, 17, 22, 0.04);
 }
 
 input[type='date']::-webkit-calendar-picker-indicator {
-  filter: invert(1);
   opacity: 0.6;
 }
 
 /* Keep content clear of the notch/status bar and home indicator when installed as a PWA. */
 .app-shell {
-  padding-top: calc(2rem + env(safe-area-inset-top, 0px));
+  padding-top: calc(1.5rem + env(safe-area-inset-top, 0px));
   padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
 }
 
@@ -92,5 +114,5 @@ input[type='date']::-webkit-calendar-picker-indicator {
   }
 }
 .animate-rise {
-  animation: rise 0.25s ease-out;
+  animation: rise 0.2s ease-out;
 }

@@ -30,31 +30,31 @@ export function AccountManager({ accounts, billCounts, onAdd, onUpdate, onDelete
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         {accounts.length === 0 && (
-          <p className="py-2 text-center text-sm text-white/40">No accounts yet — add one below.</p>
+          <p className="py-2 text-center text-sm text-muted">No accounts yet — add one below.</p>
         )}
         {accounts.map((account) => (
-          <div key={account.id} className="glass flex items-center gap-2 rounded-xl p-2.5">
+          <div key={account.id} className="flex items-center gap-2 rounded-xl bg-surface-2 p-2.5">
             <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: account.color }} />
             {editingId === account.id ? (
               <input
                 autoFocus
-                className="min-w-0 flex-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 text-sm text-white outline-none focus:border-emerald-400/50"
+                className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 py-1 text-sm text-ink outline-none focus:border-ink/20"
                 value={editingName}
                 onChange={(e) => setEditingName(e.target.value)}
                 onBlur={() => saveEdit(account)}
                 onKeyDown={(e) => e.key === 'Enter' && saveEdit(account)}
               />
             ) : (
-              <button className="min-w-0 flex-1 truncate text-left text-sm text-white" onClick={() => startEdit(account)}>
+              <button className="min-w-0 flex-1 truncate text-left text-sm text-ink" onClick={() => startEdit(account)}>
                 {account.name}
               </button>
             )}
-            <span className="shrink-0 text-[11px] text-white/35">
+            <span className="shrink-0 text-[11px] text-muted">
               {billCounts[account.id] ?? 0} bill{(billCounts[account.id] ?? 0) === 1 ? '' : 's'}
             </span>
             <button
               onClick={() => onDelete(account.id)}
-              className="shrink-0 rounded-full p-1.5 text-white/30 hover:bg-rose-500/10 hover:text-rose-400"
+              className="shrink-0 rounded-full p-1.5 text-muted hover:bg-warn-bg hover:text-alert"
               aria-label={`Delete ${account.name}`}
             >
               🗑
@@ -63,11 +63,11 @@ export function AccountManager({ accounts, billCounts, onAdd, onUpdate, onDelete
         ))}
       </div>
 
-      <div className="glass rounded-xl p-3">
-        <p className="mb-2 text-xs font-medium text-white/50">Add account</p>
+      <div className="rounded-xl bg-surface-2 p-3">
+        <p className="mb-2 text-xs font-medium text-muted">Add account</p>
         <div className="flex gap-2">
           <input
-            className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 outline-none focus:border-emerald-400/50"
+            className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted/60 outline-none focus:border-ink/20"
             placeholder="e.g. Chase Checking, Amex"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
@@ -84,7 +84,7 @@ export function AccountManager({ accounts, billCounts, onAdd, onUpdate, onDelete
               onAdd(newName, newColor);
               setNewName('');
             }}
-            className="shrink-0 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white"
+            className="shrink-0 rounded-xl bg-ink px-3 py-2 text-xs font-semibold text-white"
           >
             Add
           </button>
@@ -95,7 +95,7 @@ export function AccountManager({ accounts, billCounts, onAdd, onUpdate, onDelete
               key={c}
               type="button"
               onClick={() => setNewColor(c)}
-              className={`h-5 w-5 rounded-full ring-2 ${newColor === c ? 'ring-white' : 'ring-transparent'}`}
+              className={`h-5 w-5 rounded-full ring-2 ring-offset-1 ring-offset-surface-2 ${newColor === c ? 'ring-ink' : 'ring-transparent'}`}
               style={{ backgroundColor: c }}
               aria-label={`Color ${c}`}
             />
