@@ -20,6 +20,7 @@ import { Ring } from './components/Ring';
 import { PotCard } from './components/PotCard';
 import { GrowthChart } from './components/GrowthChart';
 import { BillForm } from './components/BillForm';
+import { BulkImportForm } from './components/BulkImportForm';
 import { NewPotForm } from './components/NewPotForm';
 import { LogSavingForm } from './components/LogSavingForm';
 import { AccountManager } from './components/AccountManager';
@@ -109,6 +110,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     updatePot,
     deletePot,
     addDeposit,
+    importBills,
   } = useBudget(uid);
 
   const today = todayUTC();
@@ -122,6 +124,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
   const [billFormOpen, setBillFormOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<EnrichedBill | null>(null);
   const [accountsOpen, setAccountsOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const [potFormOpen, setPotFormOpen] = useState(false);
   const [editingPot, setEditingPot] = useState<SavingsPot | null>(null);
@@ -219,6 +222,11 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     deleteBill(id);
     setBillFormOpen(false);
     setEditingBill(null);
+  };
+
+  const handleImportBills = (entries: Parameters<typeof importBills>[0]) => {
+    importBills(entries);
+    setBulkImportOpen(false);
   };
 
   const openNewPot = () => {
@@ -545,9 +553,14 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                       {bills.length} bill{bills.length === 1 ? '' : 's'} · {formatMoney(billsTotal, settings.currency)} a month · tap to mark as paid
                     </span>
                   </div>
-                  <button onClick={openAddBill} className="text-sm font-semibold text-ink hover:text-muted">
-                    + Add bill
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button onClick={() => setBulkImportOpen(true)} className="text-sm font-medium text-muted hover:text-ink">
+                      Bulk import
+                    </button>
+                    <button onClick={openAddBill} className="text-sm font-semibold text-ink hover:text-muted">
+                      + Add bill
+                    </button>
+                  </div>
                 </div>
 
                 {bills.length === 0 ? (
@@ -756,6 +769,10 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
       <Modal open={accountsOpen} onClose={() => setAccountsOpen(false)} title="Accounts">
         <AccountManager accounts={accounts} billCounts={billCounts} onAdd={addAccount} onUpdate={updateAccount} onDelete={deleteAccount} />
+      </Modal>
+
+      <Modal open={bulkImportOpen} onClose={() => setBulkImportOpen(false)} title="Bulk import bills">
+        <BulkImportForm onImport={handleImportBills} onCancel={() => setBulkImportOpen(false)} />
       </Modal>
     </div>
   );

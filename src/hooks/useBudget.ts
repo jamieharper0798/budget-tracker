@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import type { Account, Bill, BudgetState, Category, Deposit, Frequency, Income, SavingsPot, Settings } from '../types';
 import { db } from '../lib/firebase';
-import { DEFAULT_CATEGORIES } from '../lib/categories';
+import { ACCOUNT_COLORS, CATEGORY_COLORS, DEFAULT_CATEGORIES } from '../lib/categories';
+import { toISODate, todayUTC } from '../lib/frequency';
 
 const DEFAULT_INCOME: Income = { amount: 0, frequency: 'monthly', customIntervalDays: null };
 
@@ -254,6 +255,63 @@ export function useBudget(uid: string) {
     [commit],
   );
 
+  /** Creates many bills in a single write, auto-creating any named account/category that doesn't exist yet. */
+  const importBills = useCallback(
+    (
+      entries: {
+        name: string;
+        amount: number;
+        accountName: string | null;
+        categoryName: string | null;
+        frequency?: Frequency;
+      }[],
+    ) => {
+      commit((prev) => {
+        const accounts = [...prev.accounts];
+        const categories = [...prev.categories];
+
+        const findOrCreateAccount = (name: string): string => {
+          const existing = accounts.find((a) => a.name.toLowerCase() === name.toLowerCase());
+          if (existing) return existing.id;
+          const account: Account = { id: crypto.randomUUID(), name, color: ACCOUNT_COLORS[accounts.length % ACCOUNT_COLORS.length] };
+          accounts.push(account);
+          return account.id;
+        };
+
+        const findOrCreateCategory = (name: string): string => {
+          const existing = categories.find((c) => c.name.toLowerCase() === name.toLowerCase());
+          if (existing) return existing.id;
+          const category: Category = {
+            id: crypto.randomUUID(),
+            name,
+            icon: '🗂️',
+            color: CATEGORY_COLORS[categories.length % CATEGORY_COLORS.length],
+          };
+          categories.push(category);
+          return category.id;
+        };
+
+        const anchorDate = toISODate(todayUTC());
+        const newBills: Bill[] = entries.map((e) => ({
+          id: crypto.randomUUID(),
+          name: e.name,
+          amount: e.amount,
+          accountId: e.accountName ? findOrCreateAccount(e.accountName) : null,
+          categoryId: e.categoryName ? findOrCreateCategory(e.categoryName) : null,
+          frequency: e.frequency ?? 'monthly',
+          customIntervalDays: null,
+          anchorDate,
+          notes: '',
+          active: true,
+          createdAt: Date.now(),
+        }));
+
+        return { ...prev, accounts, categories, bills: [...newBills, ...prev.bills] };
+      });
+    },
+    [commit],
+  );
+
   return {
     ready,
     bills: state.bills,
@@ -281,5 +339,6 @@ export function useBudget(uid: string) {
     deletePot,
     addDeposit,
     deleteDeposit,
+    importBills,
   };
 }
