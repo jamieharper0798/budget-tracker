@@ -103,6 +103,35 @@ input[type='date']::-webkit-calendar-picker-indicator {
   padding-bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
 }
 
+/* Mobile PWA layer (screens under 768px) — mechanics Tailwind utilities can't express. */
+.m-carousel {
+  scrollbar-width: none;
+}
+.m-carousel::-webkit-scrollbar {
+  display: none;
+}
+
+.m-sheet {
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.m-scrim {
+  transition: opacity 0.25s;
+}
+.m-switch-knob {
+  transition:
+    left 0.18s,
+    background 0.18s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .m-sheet,
+  .m-scrim,
+  .m-swipe-content,
+  .m-switch-knob {
+    transition: none !important;
+  }
+}
+
 @keyframes rise {
   from {
     opacity: 0;

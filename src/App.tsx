@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { useIsMobile } from './hooks/useIsMobile';
 import { useBudget } from './hooks/useBudget';
 import type { NewBillInput } from './hooks/useBudget';
 import { enrichBills } from './lib/derive';
@@ -29,6 +30,7 @@ import { CategoryManager } from './components/CategoryManager';
 import { Modal } from './components/Modal';
 import { InstallButton } from './components/InstallButton';
 import { UpdateToast } from './components/UpdateToast';
+import { MobileApp } from './components/mobile/MobileApp';
 
 const CURRENCIES = ['$', '£', '€', '¥', '₹', 'A$', 'C$'];
 const INCOME_FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly', 'custom'];
@@ -73,10 +75,12 @@ function ComingSoon({ tab }: { tab: Tab }) {
 
 function App() {
   const { user, loading, signUp, logIn, logOut, resetPassword } = useAuth();
+  const isMobile = useIsMobile();
 
   if (loading) return <LoadingScreen label="Loading…" />;
   if (!user) return <AuthScreen onSignUp={signUp} onLogIn={logIn} onResetPassword={resetPassword} />;
 
+  if (isMobile) return <MobileApp uid={user.uid} email={user.email} onLogOut={logOut} />;
   return <Dashboard uid={user.uid} email={user.email} onLogOut={logOut} />;
 }
 

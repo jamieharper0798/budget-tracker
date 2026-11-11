@@ -344,6 +344,14 @@ export function useBudget(uid: string) {
     [commit],
   );
 
+  /** Overwrites the whole budget document — used by the Export/Import JSON backup feature. */
+  const replaceState = useCallback(
+    (next: BudgetState) => {
+      commit(() => next);
+    },
+    [commit],
+  );
+
   return {
     ready,
     bills: state.bills,
@@ -374,5 +382,6 @@ export function useBudget(uid: string) {
     deleteDeposit,
     adjustPotBalance,
     importBills,
+    replaceState,
   };
 }
