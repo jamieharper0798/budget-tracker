@@ -17,6 +17,25 @@ interface Props {
 
 type Status = 'All' | 'Unpaid' | 'Paid' | 'Overdue';
 
+function SortArrow({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={`shrink-0 transition-transform ${active ? 'opacity-100' : 'opacity-30'} ${active && dir === 'desc' ? 'rotate-180' : ''}`}
+      aria-hidden="true"
+    >
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  );
+}
+
 export function BillsPage({ enriched, categories, payments, currency, onTogglePaid, onOpenAddBill, onOpenEditBill, onDeleteBill }: Props) {
   const today = todayUTC();
   const year = today.getUTCFullYear();
@@ -28,6 +47,17 @@ export function BillsPage({ enriched, categories, payments, currency, onTogglePa
   const [cat, setCat] = useState<string>('all');
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string | null>(enriched[0]?.id ?? null);
+  const [sortKey, setSortKey] = useState<'due' | 'cost' | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+
+  const toggleSort = (key: 'due' | 'cost') => {
+    if (sortKey !== key) {
+      setSortKey(key);
+      setSortDir('asc');
+    } else {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    }
+  };
 
   const isPaid = (billId: string) => payments.some((p) => p.billId === billId && p.period === period);
   const isOverdue = (bill: EnrichedBill) =>
@@ -56,6 +86,15 @@ export function BillsPage({ enriched, categories, payments, currency, onTogglePa
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [enriched, status, cat, q, payments, period],
   );
+
+  const sortedRows = useMemo(() => {
+    if (!sortKey) return rows;
+    const sign = sortDir === 'asc' ? 1 : -1;
+    return [...rows].sort((a, b) => {
+      const diff = sortKey === 'due' ? a.nextDue.getTime() - b.nextDue.getTime() : a.monthly - b.monthly;
+      return diff * sign;
+    });
+  }, [rows, sortKey, sortDir]);
 
   const selectedBill = enriched.find((b) => b.id === selected) ?? enriched[0] ?? null;
 
@@ -195,7 +234,7 @@ export function BillsPage({ enriched, categories, payments, currency, onTogglePa
           </div>
 
           <div className="overflow-x-auto">
-            {rows.length === 0 ? (
+            {sortedRows.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted">No bills match these filters.</p>
             ) : (
               <table className="w-full min-w-[640px] border-collapse">
@@ -204,13 +243,29 @@ export function BillsPage({ enriched, categories, payments, currency, onTogglePa
                     <th className="pb-2.5 text-left text-sm font-medium text-muted">Bill</th>
                     <th className="pb-2.5 text-left text-sm font-medium text-muted">Category</th>
                     <th className="pb-2.5 text-left text-sm font-medium text-muted">How often</th>
-                    <th className="pb-2.5 text-left text-sm font-medium text-muted">Due</th>
-                    <th className="pb-2.5 text-right text-sm font-medium text-muted">Per month</th>
+                    <th className="pb-2.5 text-left text-sm font-medium text-muted" aria-sort={sortKey === 'due' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                      <button
+                        onClick={() => toggleSort('due')}
+                        className={`flex items-center gap-1 ${sortKey === 'due' ? 'font-semibold text-ink' : ''}`}
+                      >
+                        Due
+                        <SortArrow active={sortKey === 'due'} dir={sortDir} />
+                      </button>
+                    </th>
+                    <th className="pb-2.5 text-right text-sm font-medium text-muted" aria-sort={sortKey === 'cost' ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+                      <button
+                        onClick={() => toggleSort('cost')}
+                        className={`flex w-full items-center justify-end gap-1 ${sortKey === 'cost' ? 'font-semibold text-ink' : ''}`}
+                      >
+                        Per month
+                        <SortArrow active={sortKey === 'cost'} dir={sortDir} />
+                      </button>
+                    </th>
                     <th className="pb-2.5 text-right text-sm font-medium text-muted">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((b) => {
+                  {sortedRows.map((b) => {
                     const category = categories.find((c) => c.id === b.categoryId);
                     const paid = isPaid(b.id);
                     const late = isOverdue(b);
