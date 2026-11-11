@@ -585,8 +585,8 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
               </div>
             </div>
 
-            {/* Row 2: bills list + category donut + coming up */}
-            <div className="flex flex-wrap gap-5">
+            {/* Row 2: bills list + category donut, savings, coming up */}
+            <div className="flex flex-wrap gap-5 pb-4">
               <section className="card flex min-w-0 flex-[2_1_520px] flex-col gap-1 p-6">
                 <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
                   <div className="flex flex-col gap-1">
@@ -676,6 +676,63 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                   </div>
                 </section>
 
+                <section className="flex flex-col gap-3.5">
+                  <div className="flex items-center justify-between px-1">
+                    <h2 className="font-display text-xl font-semibold tracking-tight text-ink">Savings pots</h2>
+                    <button onClick={openNewPot} className="text-sm font-semibold text-ink hover:text-muted">
+                      New pot →
+                    </button>
+                  </div>
+                  {pots.length === 0 ? (
+                    <div className="card">
+                      <EmptyState emoji="🐷" title="No savings pots yet" subtitle="Create a pot to start tracking a goal." />
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3.5">
+                      {potsWithSaved.map(({ pot, saved }) => (
+                        <PotCard
+                          key={pot.id}
+                          pot={pot}
+                          saved={saved}
+                          currency={settings.currency}
+                          onAdd={() => openLogSaving(pot.id)}
+                          onEdit={() => openEditPot(pot)}
+                          onAdjust={() => openAdjustBalance(pot)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </section>
+
+                <section className="card flex flex-col gap-4 p-6">
+                  <div className="flex flex-col gap-1">
+                    <h2 className="font-display text-xl font-semibold tracking-tight text-ink">Savings growth</h2>
+                    <span className="text-sm text-muted">
+                      {growthDelta >= 0 ? '+' : '−'}
+                      {formatMoney(Math.abs(growthDelta), settings.currency, 0)} since {growth[0]?.label}
+                    </span>
+                  </div>
+                  <GrowthChart history={growth} currency={settings.currency} />
+                  <div className="flex flex-col gap-2.5 border-t border-line pt-3">
+                    <span className="text-sm font-semibold text-ink">Recent deposits</span>
+                    {recentDeposits.length === 0 ? (
+                      <span className="text-sm text-muted">No deposits logged yet.</span>
+                    ) : (
+                      recentDeposits.map((d) => (
+                        <div key={d.id} className="flex items-center justify-between gap-2 text-sm">
+                          <span className="truncate text-ink">
+                            {potName(d.potId)} <span className="text-muted">· {formatDate(parseISODate(d.date))}</span>
+                          </span>
+                          <span className={`shrink-0 font-semibold ${d.amount >= 0 ? 'text-[var(--color-ok-fg)]' : 'text-alert'}`}>
+                            {d.amount >= 0 ? '+' : '−'}
+                            {formatMoney(d.amount, settings.currency, 0)}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </section>
+
                 <section className="card p-6">
                   <h2 className="mb-3 font-display text-xl font-semibold tracking-tight text-ink">Coming up</h2>
                   <div className="flex flex-col gap-3.5">
@@ -706,66 +763,6 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                   </div>
                 </section>
               </div>
-            </div>
-
-            {/* Row 3: savings pots + growth */}
-            <div className="flex flex-wrap gap-5 pb-4">
-              <section className="flex min-w-0 flex-[2_1_520px] flex-col gap-3.5">
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="font-display text-xl font-semibold tracking-tight text-ink">Savings pots</h2>
-                  <button onClick={openNewPot} className="text-sm font-semibold text-ink hover:text-muted">
-                    New pot →
-                  </button>
-                </div>
-                {pots.length === 0 ? (
-                  <div className="card">
-                    <EmptyState emoji="🐷" title="No savings pots yet" subtitle="Create a pot to start tracking a goal." />
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3.5">
-                    {potsWithSaved.map(({ pot, saved }) => (
-                      <PotCard
-                        key={pot.id}
-                        pot={pot}
-                        saved={saved}
-                        currency={settings.currency}
-                        onAdd={() => openLogSaving(pot.id)}
-                        onEdit={() => openEditPot(pot)}
-                        onAdjust={() => openAdjustBalance(pot)}
-                      />
-                    ))}
-                  </div>
-                )}
-              </section>
-
-              <section className="card flex min-w-0 flex-[1_1_300px] flex-col gap-4 p-6">
-                <div className="flex flex-col gap-1">
-                  <h2 className="font-display text-xl font-semibold tracking-tight text-ink">Savings growth</h2>
-                  <span className="text-sm text-muted">
-                    {growthDelta >= 0 ? '+' : '−'}
-                    {formatMoney(Math.abs(growthDelta), settings.currency, 0)} since {growth[0]?.label}
-                  </span>
-                </div>
-                <GrowthChart history={growth} currency={settings.currency} />
-                <div className="flex flex-col gap-2.5 border-t border-line pt-3">
-                  <span className="text-sm font-semibold text-ink">Recent deposits</span>
-                  {recentDeposits.length === 0 ? (
-                    <span className="text-sm text-muted">No deposits logged yet.</span>
-                  ) : (
-                    recentDeposits.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between gap-2 text-sm">
-                        <span className="truncate text-ink">
-                          {potName(d.potId)} <span className="text-muted">· {formatDate(parseISODate(d.date))}</span>
-                        </span>
-                        <span className={`shrink-0 font-semibold ${d.amount >= 0 ? 'text-[var(--color-ok-fg)]' : 'text-alert'}`}>
-                          {d.amount >= 0 ? '+' : '−'}
-                          {formatMoney(d.amount, settings.currency, 0)}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </section>
             </div>
           </>
         )}
