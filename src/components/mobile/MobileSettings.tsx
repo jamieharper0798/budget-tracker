@@ -64,12 +64,12 @@ export function MobileSettings({ email, settings, onUpdateSettings, onManageAcco
     <main className="flex flex-col gap-4 px-4 pt-1" style={{ paddingTop: 'calc(env(safe-area-inset-top, 20px) + 14px)', paddingBottom: 'calc(60px + env(safe-area-inset-bottom, 0px) + 24px)' }}>
       <h1 className="px-1 font-display text-[34px] font-semibold tracking-tight text-ink">Settings</h1>
 
-      <section className="card flex flex-col gap-1">
+      <section className="card flex flex-col gap-1 p-[18px]">
         <span className="text-[13px] font-medium text-muted">Signed in as</span>
         <span className="truncate text-sm font-semibold text-ink">{email ?? 'Unknown'}</span>
       </section>
 
-      <section className="card flex flex-col gap-3">
+      <section className="card flex flex-col gap-3 p-[18px]">
         <h2 className="text-[16px] font-semibold text-ink">Currency</h2>
         <div className="grid grid-cols-4 gap-2">
           {CURRENCIES.map((c) => (
@@ -84,7 +84,7 @@ export function MobileSettings({ email, settings, onUpdateSettings, onManageAcco
         </div>
       </section>
 
-      <section className="card flex flex-col">
+      <section className="card flex flex-col p-[18px]">
         <button onClick={onManageAccounts} className="flex min-h-13 items-center justify-between py-1 text-left text-sm font-semibold text-ink">
           Manage accounts
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M9 6l6 6-6 6" /></svg>
@@ -95,7 +95,7 @@ export function MobileSettings({ email, settings, onUpdateSettings, onManageAcco
         </button>
       </section>
 
-      <section className="card flex flex-col gap-3">
+      <section className="card flex flex-col gap-3 p-[18px]">
         <div className="flex flex-col gap-1">
           <h2 className="text-[16px] font-semibold text-ink">Backup</h2>
           <span className="text-[13px] text-muted">Export your data as a JSON file, or restore from one.</span>
@@ -123,7 +123,7 @@ export function MobileSettings({ email, settings, onUpdateSettings, onManageAcco
         {importedAt && !importError && <p className="text-xs text-[var(--color-ok-fg)]">Backup imported.</p>}
       </section>
 
-      <button onClick={onLogOut} className="card flex min-h-13 items-center justify-center text-sm font-semibold text-alert">
+      <button onClick={onLogOut} className="card flex min-h-13 items-center justify-center p-[18px] text-sm font-semibold text-alert">
         Log out
       </button>
     </main>

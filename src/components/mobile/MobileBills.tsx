@@ -62,7 +62,7 @@ export function MobileBills({ year, month, billRows, billsTotal, paidAmt, paidCo
         </button>
       </div>
 
-      <section className="card flex flex-col gap-3">
+      <section className="card flex flex-col gap-3 p-[18px]">
         <div className="flex items-end justify-between gap-3">
           <div className="flex flex-col gap-0.5">
             <span className="text-[13px] font-medium text-muted">Still to pay this month</span>

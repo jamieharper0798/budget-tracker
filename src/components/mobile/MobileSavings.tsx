@@ -57,12 +57,12 @@ export function MobileSavings({
 
       <div className="flex flex-col gap-4">
         {potsWithSaved.length === 0 ? (
-          <p className="card py-8 text-center text-sm text-muted">No savings pots yet. Tap + to create one.</p>
+          <p className="card p-[18px] py-10 text-center text-sm text-muted">No savings pots yet. Tap + to create one.</p>
         ) : (
           potsWithSaved.map(({ pot, saved }) => {
             const pct = pot.target > 0 ? Math.round((saved / pot.target) * 100) : 0;
             return (
-              <section key={pot.id} className="card flex flex-col gap-3.5">
+              <section key={pot.id} className="card flex flex-col gap-3.5 p-[18px]">
                 <div className="flex items-center gap-3">
                   <button onClick={() => onEditPot(pot)} className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-sm font-bold text-ink" style={{ background: `${pot.color}22` }}>
                     {pot.name[0]?.toUpperCase() ?? '?'}
