@@ -154,12 +154,14 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
   // All bills (active + paused) for display; paused ones are shown dimmed with no paid/overdue state.
   const billRows = useMemo(
     () =>
-      enriched.map((bill) => {
-        const dueDate = dueDateInMonth(bill.anchorDate, bill.frequency, bill.customIntervalDays, year, month);
-        const paid = payments.some((p) => p.billId === bill.id && p.period === period);
-        const overdue = isCurrentMonth && !paid && dueDayInMonth(bill.anchorDate, year, month) < today.getUTCDate();
-        return { bill, dueDate, paid, overdue };
-      }),
+      enriched
+        .map((bill) => {
+          const dueDate = dueDateInMonth(bill.anchorDate, bill.frequency, bill.customIntervalDays, year, month);
+          const paid = payments.some((p) => p.billId === bill.id && p.period === period);
+          const overdue = isCurrentMonth && !paid && dueDayInMonth(bill.anchorDate, year, month) < today.getUTCDate();
+          return { bill, dueDate, paid, overdue };
+        })
+        .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime()),
     [enriched, payments, period, year, month, isCurrentMonth, today],
   );
   const activeBillRows = useMemo(() => billRows.filter((r) => r.bill.active), [billRows]);
