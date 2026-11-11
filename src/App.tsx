@@ -312,7 +312,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
   const tiles: { k: string; v: number; c: string | null }[] = [
     { k: 'Income', v: monthlyIncome, c: null },
-    { k: 'Bills', v: billsTotal, c: '#fff' },
+    { k: 'Bills', v: billsTotal, c: 'var(--color-peach)' },
     { k: 'Savings', v: savingsTotal, c: 'var(--color-violet-soft)' },
     { k: 'Left over', v: leftover, c: 'var(--color-accent)' },
   ];
@@ -520,7 +520,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                     role="img"
                     aria-label={`Of ${formatMoney(monthlyIncome, settings.currency, 0)} income: bills, savings and left over`}
                   >
-                    <span className="rounded-full bg-white" style={{ flex: `${Math.max(billsTotal, 0.0001)} 1 0` }} />
+                    <span className="rounded-full bg-peach" style={{ flex: `${Math.max(billsTotal, 0.0001)} 1 0` }} />
                     <span className="rounded-full bg-violet-soft" style={{ flex: `${Math.max(savingsTotal, 0.0001)} 1 0` }} />
                     <span className="rounded-full bg-accent" style={{ flex: `${Math.max(leftover, 0.0001)} 1 0` }} />
                   </div>
