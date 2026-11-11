@@ -23,6 +23,7 @@ import { BillForm } from './components/BillForm';
 import { BulkImportForm } from './components/BulkImportForm';
 import { NewPotForm } from './components/NewPotForm';
 import { LogSavingForm } from './components/LogSavingForm';
+import { AdjustBalanceForm } from './components/AdjustBalanceForm';
 import { AccountManager } from './components/AccountManager';
 import { Modal } from './components/Modal';
 import { InstallButton } from './components/InstallButton';
@@ -110,6 +111,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     updatePot,
     deletePot,
     addDeposit,
+    adjustPotBalance,
     importBills,
   } = useBudget(uid);
 
@@ -131,6 +133,9 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
   const [logSavingOpen, setLogSavingOpen] = useState(false);
   const [logSavingPotId, setLogSavingPotId] = useState<string | null>(null);
+
+  const [adjustOpen, setAdjustOpen] = useState(false);
+  const [adjustingPot, setAdjustingPot] = useState<SavingsPot | null>(null);
 
   const enriched = useMemo(() => enrichBills(bills), [bills]);
   const activeBills = useMemo(() => enriched.filter((b) => b.active), [enriched]);
@@ -256,6 +261,16 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
   const handleSaveDeposit = (potId: string, amount: number, date: string, note: string) => {
     addDeposit(potId, amount, date, note);
     setLogSavingOpen(false);
+  };
+
+  const openAdjustBalance = (pot: SavingsPot) => {
+    setAdjustingPot(pot);
+    setAdjustOpen(true);
+  };
+  const handleAdjustBalance = (newTotal: number, date: string, note: string) => {
+    if (adjustingPot) adjustPotBalance(adjustingPot.id, newTotal, date, note);
+    setAdjustOpen(false);
+    setAdjustingPot(null);
   };
 
   const prevMonth = () => {
@@ -689,6 +704,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                         currency={settings.currency}
                         onAdd={() => openLogSaving(pot.id)}
                         onEdit={() => openEditPot(pot)}
+                        onAdjust={() => openAdjustBalance(pot)}
                       />
                     ))}
                   </div>
@@ -714,7 +730,10 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                         <span className="truncate text-ink">
                           {potName(d.potId)} <span className="text-muted">· {formatDate(parseISODate(d.date))}</span>
                         </span>
-                        <span className="shrink-0 font-semibold text-[var(--color-ok-fg)]">+{formatMoney(d.amount, settings.currency, 0)}</span>
+                        <span className={`shrink-0 font-semibold ${d.amount >= 0 ? 'text-[var(--color-ok-fg)]' : 'text-alert'}`}>
+                          {d.amount >= 0 ? '+' : '−'}
+                          {formatMoney(d.amount, settings.currency, 0)}
+                        </span>
                       </div>
                     ))
                   )}
@@ -765,6 +784,18 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
       <Modal open={logSavingOpen} onClose={() => setLogSavingOpen(false)} title="Log a saving">
         <LogSavingForm pots={pots} initialPotId={logSavingPotId} onSave={handleSaveDeposit} onCancel={() => setLogSavingOpen(false)} />
+      </Modal>
+
+      <Modal open={adjustOpen} onClose={() => setAdjustOpen(false)} title="Adjust balance">
+        {adjustingPot && (
+          <AdjustBalanceForm
+            potName={adjustingPot.name}
+            currentSaved={potSaved(adjustingPot.id, deposits)}
+            currency={settings.currency}
+            onSave={handleAdjustBalance}
+            onCancel={() => setAdjustOpen(false)}
+          />
+        )}
       </Modal>
 
       <Modal open={accountsOpen} onClose={() => setAccountsOpen(false)} title="Accounts">

@@ -255,6 +255,28 @@ export function useBudget(uid: string) {
     [commit],
   );
 
+  /** Logs the difference between a pot's current total and the actual balance the user enters, as a single
+   * (possibly negative) adjustment deposit — for money already saved before using the app, interest, or a withdrawal. */
+  const adjustPotBalance = useCallback(
+    (potId: string, newTotal: number, date: string, note: string) => {
+      commit((prev) => {
+        const currentSaved = prev.deposits.filter((d) => d.potId === potId).reduce((sum, d) => sum + d.amount, 0);
+        const delta = newTotal - currentSaved;
+        if (delta === 0) return prev;
+        const deposit: Deposit = {
+          id: crypto.randomUUID(),
+          potId,
+          amount: delta,
+          date,
+          note: note || 'Balance adjustment',
+          createdAt: Date.now(),
+        };
+        return { ...prev, deposits: [deposit, ...prev.deposits] };
+      });
+    },
+    [commit],
+  );
+
   /** Creates many bills in a single write, auto-creating any named account/category that doesn't exist yet. */
   const importBills = useCallback(
     (
@@ -339,6 +361,7 @@ export function useBudget(uid: string) {
     deletePot,
     addDeposit,
     deleteDeposit,
+    adjustPotBalance,
     importBills,
   };
 }

@@ -8,9 +8,10 @@ interface Props {
   currency: string;
   onAdd: () => void;
   onEdit: () => void;
+  onAdjust: () => void;
 }
 
-export function PotCard({ pot, saved, currency, onAdd, onEdit }: Props) {
+export function PotCard({ pot, saved, currency, onAdd, onEdit, onAdjust }: Props) {
   const pct = pot.target > 0 ? Math.round((saved / pot.target) * 100) : 0;
 
   return (
@@ -32,13 +33,22 @@ export function PotCard({ pot, saved, currency, onAdd, onEdit }: Props) {
       </span>
       <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
         <span className="text-xs text-muted">{formatMoney(pot.monthlyContribution, currency, 0)} a month</span>
-        <button
-          onClick={onAdd}
-          className="rounded-[10px] bg-surface-2 px-3 py-2 text-xs font-semibold text-ink hover:bg-track"
-          aria-label={`Add to ${pot.name}`}
-        >
-          + Add
-        </button>
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={onAdjust}
+            className="rounded-[10px] px-2.5 py-2 text-xs font-medium text-muted hover:bg-surface-2"
+            aria-label={`Adjust ${pot.name}'s balance`}
+          >
+            Adjust
+          </button>
+          <button
+            onClick={onAdd}
+            className="rounded-[10px] bg-surface-2 px-3 py-2 text-xs font-semibold text-ink hover:bg-track"
+            aria-label={`Add to ${pot.name}`}
+          >
+            + Add
+          </button>
+        </div>
       </div>
     </div>
   );
