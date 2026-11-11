@@ -183,18 +183,21 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
   const donut = useMemo(() => {
     if (billsTotal <= 0) return { background: 'var(--color-track)', rows: [] as { id: string; name: string; icon: string; color: string; value: number; pct: number }[] };
-    let acc = 0;
-    const stops: string[] = [];
     const rows = categories
       .map((cat) => {
         const value = activeBills.filter((b) => b.categoryId === cat.id).reduce((sum, b) => sum + b.monthly, 0);
         if (value <= 0) return null;
-        const start = acc;
-        acc += (value / billsTotal) * 100;
-        stops.push(`${cat.color} ${start.toFixed(1)}% ${(acc - 0.6).toFixed(1)}%, #fff ${(acc - 0.6).toFixed(1)}% ${acc.toFixed(1)}%`);
         return { id: cat.id, name: cat.name, icon: cat.icon, color: cat.color, value, pct: Math.round((value / billsTotal) * 100) };
       })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => b.value - a.value);
+    let acc = 0;
+    const stops: string[] = [];
+    for (const r of rows) {
+      const start = acc;
+      acc += (r.value / billsTotal) * 100;
+      stops.push(`${r.color} ${start.toFixed(1)}% ${(acc - 0.6).toFixed(1)}%, #fff ${(acc - 0.6).toFixed(1)}% ${acc.toFixed(1)}%`);
+    }
     return { background: `conic-gradient(${stops.join(', ')})`, rows };
   }, [categories, activeBills, billsTotal]);
 
