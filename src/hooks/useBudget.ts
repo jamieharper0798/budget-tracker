@@ -169,6 +169,16 @@ export function useBudget(uid: string) {
     [commit],
   );
 
+  const updateCategory = useCallback(
+    (id: string, name: string, icon: string, color: string) => {
+      commit((prev) => ({
+        ...prev,
+        categories: prev.categories.map((c) => (c.id === id ? { ...c, name: name.trim(), icon, color } : c)),
+      }));
+    },
+    [commit],
+  );
+
   const deleteCategory = useCallback(
     (id: string) => {
       commit((prev) => ({
@@ -352,6 +362,7 @@ export function useBudget(uid: string) {
     updateAccount,
     deleteAccount,
     addCategory,
+    updateCategory,
     deleteCategory,
     updateSettings,
     updateIncome,

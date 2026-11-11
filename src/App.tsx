@@ -25,6 +25,7 @@ import { NewPotForm } from './components/NewPotForm';
 import { LogSavingForm } from './components/LogSavingForm';
 import { AdjustBalanceForm } from './components/AdjustBalanceForm';
 import { AccountManager } from './components/AccountManager';
+import { CategoryManager } from './components/CategoryManager';
 import { Modal } from './components/Modal';
 import { InstallButton } from './components/InstallButton';
 import { UpdateToast } from './components/UpdateToast';
@@ -104,6 +105,8 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     updateAccount,
     deleteAccount,
     addCategory,
+    updateCategory,
+    deleteCategory,
     updateSettings,
     updateIncome,
     togglePaid,
@@ -126,6 +129,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
   const [billFormOpen, setBillFormOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<EnrichedBill | null>(null);
   const [accountsOpen, setAccountsOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const [potFormOpen, setPotFormOpen] = useState(false);
@@ -203,6 +207,15 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     for (const b of bills) {
       if (!b.accountId) continue;
       counts[b.accountId] = (counts[b.accountId] ?? 0) + 1;
+    }
+    return counts;
+  }, [bills]);
+
+  const categoryBillCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const b of bills) {
+      if (!b.categoryId) continue;
+      counts[b.categoryId] = (counts[b.categoryId] ?? 0) + 1;
     }
     return counts;
   }, [bills]);
@@ -377,6 +390,15 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                     className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-medium text-ink hover:bg-surface-2"
                   >
                     Manage accounts
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCategoriesOpen(true);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full rounded-lg px-2 py-1.5 text-left text-xs font-medium text-ink hover:bg-surface-2"
+                  >
+                    Manage categories
                   </button>
                   <button
                     onClick={onLogOut}
@@ -800,6 +822,16 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
       <Modal open={accountsOpen} onClose={() => setAccountsOpen(false)} title="Accounts">
         <AccountManager accounts={accounts} billCounts={billCounts} onAdd={addAccount} onUpdate={updateAccount} onDelete={deleteAccount} />
+      </Modal>
+
+      <Modal open={categoriesOpen} onClose={() => setCategoriesOpen(false)} title="Categories">
+        <CategoryManager
+          categories={categories}
+          billCounts={categoryBillCounts}
+          onAdd={addCategory}
+          onUpdate={updateCategory}
+          onDelete={deleteCategory}
+        />
       </Modal>
 
       <Modal open={bulkImportOpen} onClose={() => setBulkImportOpen(false)} title="Bulk import bills">
