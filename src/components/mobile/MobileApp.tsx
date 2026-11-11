@@ -46,7 +46,7 @@ function LoadingScreen() {
 
 export function MobileApp({ uid, email, onLogOut }: Props) {
   const {
-    ready, bills, accounts, categories, settings, income, pots, deposits, payments,
+    ready, bills, accounts, categories, settings, income, pots, deposits, payments, plannedTransfers,
     addBill, updateBill, deleteBill,
     addAccount, updateAccount, deleteAccount,
     addCategory, updateCategory, deleteCategory,
@@ -254,7 +254,7 @@ export function MobileApp({ uid, email, onLogOut }: Props) {
           onManageAccounts={() => setSheet({ kind: 'accounts' })}
           onManageCategories={() => setSheet({ kind: 'categories' })}
           onLogOut={onLogOut}
-          exportState={{ bills, accounts, categories, settings, income, pots, deposits, payments }}
+          exportState={{ bills, accounts, categories, settings, income, pots, deposits, payments, plannedTransfers }}
           onImportState={replaceState}
         />
       )}

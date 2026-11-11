@@ -16,6 +16,7 @@ const INITIAL_STATE: BudgetState = {
   pots: [],
   deposits: [],
   payments: [],
+  plannedTransfers: [],
 };
 
 /** Data from the pre-login, localStorage-only version of this app, adopted on first sync. */
@@ -40,6 +41,7 @@ function normalize(data: Partial<BudgetState> | undefined): BudgetState {
     pots: data?.pots ?? [],
     deposits: data?.deposits ?? [],
     payments: data?.payments ?? [],
+    plannedTransfers: data?.plannedTransfers ?? [],
   };
 }
 
@@ -52,6 +54,8 @@ export interface NewBillInput {
   customIntervalDays: number | null;
   anchorDate: string;
   notes: string;
+  paymentsPerYear?: number;
+  reminderDaysBefore?: number;
 }
 
 export function useBudget(uid: string) {
@@ -212,7 +216,7 @@ export function useBudget(uid: string) {
           ...prev,
           payments: isPaid
             ? prev.payments.filter((p) => !(p.billId === billId && p.period === period))
-            : [...prev.payments, { billId, period }],
+            : [...prev.payments, { billId, period, paidOn: toISODate(todayUTC()) }],
         };
       });
     },
@@ -344,6 +348,24 @@ export function useBudget(uid: string) {
     [commit],
   );
 
+  /** Sets (or replaces) the one planned recurring transfer for a pot, shown on the Calendar. */
+  const setPlannedTransfer = useCallback(
+    (potId: string, day: number, amount: number) => {
+      commit((prev) => ({
+        ...prev,
+        plannedTransfers: [...prev.plannedTransfers.filter((t) => t.potId !== potId), { potId, day, amount }],
+      }));
+    },
+    [commit],
+  );
+
+  const removePlannedTransfer = useCallback(
+    (potId: string) => {
+      commit((prev) => ({ ...prev, plannedTransfers: prev.plannedTransfers.filter((t) => t.potId !== potId) }));
+    },
+    [commit],
+  );
+
   /** Overwrites the whole budget document — used by the Export/Import JSON backup feature. */
   const replaceState = useCallback(
     (next: BudgetState) => {
@@ -362,6 +384,7 @@ export function useBudget(uid: string) {
     pots: state.pots,
     deposits: state.deposits,
     payments: state.payments,
+    plannedTransfers: state.plannedTransfers,
     addBill,
     updateBill,
     deleteBill,
@@ -382,6 +405,8 @@ export function useBudget(uid: string) {
     deleteDeposit,
     adjustPotBalance,
     importBills,
+    setPlannedTransfer,
+    removePlannedTransfer,
     replaceState,
   };
 }

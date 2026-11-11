@@ -16,6 +16,7 @@
   --color-muted: #5f6672;
   --color-muted-2: #4a515c;
   --color-muted-on-ink: #a9b0ba;
+  --color-faint: #8a9099;
 
   --color-accent: #c9ef4a;
   --color-violet: #6e56cf;
@@ -28,6 +29,14 @@
   --color-warn-bg: #fdebdd;
   --color-warn-fg: #8a3a06;
   --color-alert: #e8590c;
+
+  /* Desktop Bills/Savings/Calendar pages only — new, purely additive tokens. */
+  --color-surface-3: #f6f7f4;
+  --color-cell: #fafbf9;
+  --color-border: #d9dcd6;
+  --color-chip-border: #e2e5df;
+  --color-violet-bg: #ede9fb;
+  --color-violet-fg: #4c1d95;
 }
 
 :root {

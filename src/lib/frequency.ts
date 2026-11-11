@@ -118,6 +118,18 @@ export function yearlyCost(
   return amount * occurrencesPerYear(frequency, customIntervalDays);
 }
 
+/** Like `yearlyCost`, but for a monthly bill that isn't actually charged every month (e.g. council tax,
+ * 10 of 12), `paymentsPerYear` overrides the count instead of assuming all 12. */
+export function annualCost(
+  frequency: Frequency,
+  amount: number,
+  customIntervalDays: number | null,
+  paymentsPerYear?: number,
+): number {
+  if (frequency === 'monthly' && paymentsPerYear) return amount * paymentsPerYear;
+  return yearlyCost(amount, frequency, customIntervalDays);
+}
+
 /** [start, end) UTC range for a given year and 0-indexed month. */
 export function monthRange(year: number, month: number): [Date, Date] {
   return [new Date(Date.UTC(year, month, 1)), new Date(Date.UTC(year, month + 1, 1))];

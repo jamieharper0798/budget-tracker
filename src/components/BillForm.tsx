@@ -13,6 +13,8 @@ interface Props {
   onCancel: () => void;
   onAddAccount: (name: string, color: string) => string;
   onAddCategory: (name: string, icon: string, color: string) => string;
+  /** Pre-fills the payment date for a new bill (e.g. from "+ Add bill on this day" on the Calendar). Ignored when editing. */
+  initialAnchorDate?: string;
 }
 
 const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly', 'custom'];
@@ -20,15 +22,19 @@ const FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'quarterly', 
 const inputClass =
   'w-full rounded-xl border border-line bg-surface-2 px-3 py-2.5 text-sm text-ink placeholder:text-muted/60 outline-none focus:border-ink/20 focus:bg-surface';
 
-export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAccount, onAddCategory }: Props) {
+export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAccount, onAddCategory, initialAnchorDate }: Props) {
   const [name, setName] = useState(bill?.name ?? '');
   const [amount, setAmount] = useState(bill ? String(bill.amount) : '');
   const [frequency, setFrequency] = useState<Frequency>(bill?.frequency ?? 'monthly');
   const [customDays, setCustomDays] = useState(bill?.customIntervalDays ? String(bill.customIntervalDays) : '30');
-  const [anchorDate, setAnchorDate] = useState(bill?.anchorDate ?? toISODate(todayUTC()));
+  const [anchorDate, setAnchorDate] = useState(bill?.anchorDate ?? initialAnchorDate ?? toISODate(todayUTC()));
   const [accountId, setAccountId] = useState<string | null>(bill?.accountId ?? accounts[0]?.id ?? null);
   const [categoryId, setCategoryId] = useState<string | null>(bill?.categoryId ?? categories[0]?.id ?? null);
   const [notes, setNotes] = useState(bill?.notes ?? '');
+  const [paymentsPerYear, setPaymentsPerYear] = useState(bill?.paymentsPerYear ? String(bill.paymentsPerYear) : '');
+  const [reminderDays, setReminderDays] = useState(
+    bill?.reminderDaysBefore != null ? String(bill.reminderDaysBefore) : '2',
+  );
 
   const [addingAccount, setAddingAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
@@ -69,6 +75,9 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
       return setError('Enter a valid number of days.');
     }
 
+    const parsedPaymentsPerYear = Number(paymentsPerYear);
+    const parsedReminderDays = Number(reminderDays);
+
     onSave({
       name: trimmedName,
       amount: parsedAmount,
@@ -78,6 +87,12 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
       customIntervalDays: frequency === 'custom' ? Math.round(parsedCustomDays) : null,
       anchorDate,
       notes: notes.trim(),
+      ...(frequency === 'monthly' && Number.isFinite(parsedPaymentsPerYear) && parsedPaymentsPerYear > 0
+        ? { paymentsPerYear: Math.round(parsedPaymentsPerYear) }
+        : {}),
+      ...(Number.isFinite(parsedReminderDays) && parsedReminderDays >= 0
+        ? { reminderDaysBefore: Math.round(parsedReminderDays) }
+        : {}),
     });
   };
 
@@ -149,6 +164,21 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
               onChange={(e) => setCustomDays(e.target.value)}
             />
             <span className="text-xs text-muted">days</span>
+          </div>
+        )}
+        {frequency === 'monthly' && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-xs text-muted">Charged</span>
+            <input
+              className={`${inputClass} w-20`}
+              type="number"
+              min="1"
+              max="12"
+              placeholder="12"
+              value={paymentsPerYear}
+              onChange={(e) => setPaymentsPerYear(e.target.value)}
+            />
+            <span className="text-xs text-muted">of 12 months a year (e.g. council tax)</span>
           </div>
         )}
       </div>
@@ -295,6 +325,17 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
           placeholder="Plan details, cancellation link, etc."
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-xs font-medium text-muted">Remind me (days before due)</label>
+        <input
+          className={`${inputClass} w-20`}
+          type="number"
+          min="0"
+          value={reminderDays}
+          onChange={(e) => setReminderDays(e.target.value)}
         />
       </div>
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useIsMobile } from './hooks/useIsMobile';
+import { useHashRoute } from './hooks/useHashRoute';
 import { useBudget } from './hooks/useBudget';
 import type { NewBillInput } from './hooks/useBudget';
 import { enrichBills } from './lib/derive';
@@ -31,11 +32,20 @@ import { Modal } from './components/Modal';
 import { InstallButton } from './components/InstallButton';
 import { UpdateToast } from './components/UpdateToast';
 import { MobileApp } from './components/mobile/MobileApp';
+import { BillsPage } from './components/desktop/BillsPage';
+import { SavingsPage } from './components/desktop/SavingsPage';
+import { CalendarPage } from './components/desktop/CalendarPage';
+import type { Route } from './hooks/useHashRoute';
 
 const CURRENCIES = ['$', '£', '€', '¥', '₹', 'A$', 'C$'];
 const INCOME_FREQUENCIES: Frequency[] = ['weekly', 'biweekly', 'monthly', 'quarterly', 'yearly', 'custom'];
-const TABS = ['Overview', 'Bills', 'Savings', 'Calendar', 'Settings'] as const;
-type Tab = (typeof TABS)[number];
+const NAV: { label: string; route: Route; href: string }[] = [
+  { label: 'Overview', route: 'overview', href: '#/' },
+  { label: 'Bills', route: 'bills', href: '#/bills' },
+  { label: 'Savings', route: 'savings', href: '#/savings' },
+  { label: 'Calendar', route: 'calendar', href: '#/calendar' },
+  { label: 'Settings', route: 'settings', href: '#/settings' },
+];
 
 function initialsFromEmail(email: string | null): string {
   if (!email) return '?';
@@ -63,12 +73,12 @@ function EmptyState({ emoji, title, subtitle }: { emoji: string; title: string; 
   );
 }
 
-function ComingSoon({ tab }: { tab: Tab }) {
+function ComingSoon() {
   return (
     <div className="card flex flex-col items-center gap-2 p-12 text-center">
       <p className="text-3xl">🚧</p>
-      <p className="text-sm font-semibold text-ink">{tab} is coming soon</p>
-      <p className="text-xs text-muted">For now, everything is managed from the Overview tab.</p>
+      <p className="text-sm font-semibold text-ink">Settings is coming soon</p>
+      <p className="text-xs text-muted">For now, your currency and account/category settings are managed from the account menu.</p>
     </div>
   );
 }
@@ -101,6 +111,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     pots,
     deposits,
     payments,
+    plannedTransfers,
     addBill,
     updateBill,
     deleteBill,
@@ -120,10 +131,12 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     addDeposit,
     adjustPotBalance,
     importBills,
+    setPlannedTransfer,
+    removePlannedTransfer,
   } = useBudget(uid);
 
   const today = todayUTC();
-  const [tab, setTab] = useState<Tab>('Overview');
+  const route = useHashRoute();
   const [year, setYear] = useState(today.getUTCFullYear());
   const [month, setMonth] = useState(today.getUTCMonth());
 
@@ -132,6 +145,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
   const [billFormOpen, setBillFormOpen] = useState(false);
   const [editingBill, setEditingBill] = useState<EnrichedBill | null>(null);
+  const [addBillPrefillDate, setAddBillPrefillDate] = useState<string | null>(null);
   const [accountsOpen, setAccountsOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
@@ -231,8 +245,9 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
 
   const potName = (potId: string) => pots.find((p) => p.id === potId)?.name ?? 'Pot';
 
-  const openAddBill = () => {
+  const openAddBill = (prefillDate?: string) => {
     setEditingBill(null);
+    setAddBillPrefillDate(prefillDate ?? null);
     setBillFormOpen(true);
   };
   const openEditBill = (bill: EnrichedBill) => {
@@ -244,11 +259,13 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
     else addBill(input);
     setBillFormOpen(false);
     setEditingBill(null);
+    setAddBillPrefillDate(null);
   };
   const handleDeleteBill = (id: string) => {
     deleteBill(id);
     setBillFormOpen(false);
     setEditingBill(null);
+    setAddBillPrefillDate(null);
   };
 
   const handleImportBills = (entries: Parameters<typeof importBills>[0]) => {
@@ -338,16 +355,17 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
           </div>
 
           <nav className="flex flex-wrap gap-1 rounded-2xl bg-surface-2 p-1" aria-label="Main">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`min-h-10 rounded-xl px-4 text-sm font-medium transition ${
-                  tab === t ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(14,17,22,.08)]' : 'text-muted-2'
+            {NAV.map((n) => (
+              <a
+                key={n.route}
+                href={n.href}
+                aria-current={route === n.route ? 'page' : undefined}
+                className={`inline-flex min-h-10 items-center rounded-xl px-4 text-sm font-medium transition ${
+                  route === n.route ? 'bg-surface text-ink shadow-[0_1px_3px_rgba(14,17,22,.08)]' : 'text-muted-2'
                 }`}
               >
-                {t}
-              </button>
+                {n.label}
+              </a>
             ))}
           </nav>
 
@@ -421,8 +439,46 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
           </div>
         </header>
 
-        {tab !== 'Overview' ? (
-          <ComingSoon tab={tab} />
+        {route === 'bills' ? (
+          <BillsPage
+            enriched={enriched}
+            categories={categories}
+            payments={payments}
+            currency={settings.currency}
+            onTogglePaid={togglePaid}
+            onOpenAddBill={() => openAddBill()}
+            onOpenEditBill={openEditBill}
+            onDeleteBill={handleDeleteBill}
+          />
+        ) : route === 'savings' ? (
+          <SavingsPage
+            potsWithSaved={potsWithSaved}
+            deposits={deposits}
+            growth={growth}
+            currency={settings.currency}
+            plannedTransfers={plannedTransfers}
+            onNewPot={openNewPot}
+            onEditPot={openEditPot}
+            onLogSaving={openLogSaving}
+            onSetPlannedTransfer={setPlannedTransfer}
+            onRemovePlannedTransfer={removePlannedTransfer}
+          />
+        ) : route === 'calendar' ? (
+          <CalendarPage
+            enriched={enriched}
+            categories={categories}
+            payments={payments}
+            pots={pots}
+            plannedTransfers={plannedTransfers}
+            settings={settings}
+            currency={settings.currency}
+            monthlyIncome={monthlyIncome}
+            onTogglePaid={togglePaid}
+            onOpenAddBill={(prefillDate) => openAddBill(prefillDate)}
+            onUpdatePayDay={(payDay) => updateSettings({ payDay })}
+          />
+        ) : route === 'settings' ? (
+          <ComingSoon />
         ) : (
           <>
             <div className="flex flex-wrap items-end justify-between gap-4 px-1 pt-1">
@@ -501,7 +557,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                     )}
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={openAddBill} className="flex min-h-11 items-center gap-2 rounded-[14px] bg-accent px-4 font-semibold text-ink">
+                    <button onClick={() => openAddBill()} className="flex min-h-11 items-center gap-2 rounded-[14px] bg-accent px-4 font-semibold text-ink">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                       Add bill
                     </button>
@@ -603,7 +659,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
                     <button onClick={() => setBulkImportOpen(true)} className="text-sm font-medium text-muted hover:text-ink">
                       Bulk import
                     </button>
-                    <button onClick={openAddBill} className="text-sm font-semibold text-ink hover:text-muted">
+                    <button onClick={() => openAddBill()} className="text-sm font-semibold text-ink hover:text-muted">
                       + Add bill
                     </button>
                   </div>
@@ -781,6 +837,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
           onCancel={() => setBillFormOpen(false)}
           onAddAccount={addAccount}
           onAddCategory={addCategory}
+          initialAnchorDate={addBillPrefillDate ?? undefined}
         />
         {editingBill && (
           <div className="mt-3 flex items-center justify-between border-t border-line pt-3">
