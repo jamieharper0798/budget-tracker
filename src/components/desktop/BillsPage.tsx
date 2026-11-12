@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
 import type { EnrichedBill } from '../../lib/derive';
-import type { BillPayment, Category } from '../../types';
+import type { Account, BillPayment, Category } from '../../types';
 import { FREQUENCY_LABELS, dueDayInMonth, parseISODate, todayUTC } from '../../lib/frequency';
 import { formatDueDay, formatMoney } from '../../lib/format';
 
 interface Props {
   enriched: EnrichedBill[];
   categories: Category[];
+  accounts: Account[];
   payments: BillPayment[];
   currency: string;
   onTogglePaid: (billId: string, period: string) => void;
@@ -36,7 +37,7 @@ function SortArrow({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) {
   );
 }
 
-export function BillsPage({ enriched, categories, payments, currency, onTogglePaid, onOpenAddBill, onOpenEditBill, onDeleteBill }: Props) {
+export function BillsPage({ enriched, categories, accounts, payments, currency, onTogglePaid, onOpenAddBill, onOpenEditBill, onDeleteBill }: Props) {
   const today = todayUTC();
   const year = today.getUTCFullYear();
   const month = today.getUTCMonth();
@@ -109,6 +110,26 @@ export function BillsPage({ enriched, categories, payments, currency, onTogglePa
       .sort((a, b) => b.value - a.value);
     return rowsByCategory;
   }, [categories, active]);
+
+  const byAccount = useMemo(() => {
+    const rowsByAccount = accounts
+      .map((a) => {
+        const bills = active.filter((b) => b.accountId === a.id);
+        const value = bills.reduce((s, b) => s + b.monthly, 0);
+        return { account: a, count: bills.length, value };
+      })
+      .filter((r) => r.count > 0)
+      .sort((a, b) => b.value - a.value);
+    const noAccountBills = active.filter((b) => !b.accountId);
+    if (noAccountBills.length > 0) {
+      rowsByAccount.push({
+        account: { id: '', name: 'No account', color: '#64748b' },
+        count: noAccountBills.length,
+        value: noAccountBills.reduce((s, b) => s + b.monthly, 0),
+      });
+    }
+    return rowsByAccount;
+  }, [accounts, active]);
 
   const history = useMemo(() => {
     if (!selectedBill) return [];
@@ -455,6 +476,30 @@ export function BillsPage({ enriched, categories, payments, currency, onTogglePa
                     <div
                       className="h-full rounded-full"
                       style={{ width: `${Math.max(3, Math.round((value / Math.max(monthlyTotal, 0.0001)) * 100))}%`, background: category.color }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
+          </section>
+
+          <section className="card flex flex-col gap-3.5 p-6">
+            <h2 className="font-display text-xl font-semibold tracking-tight text-ink">By account</h2>
+            {byAccount.length === 0 ? (
+              <p className="text-sm text-muted">No bills linked to an account yet.</p>
+            ) : (
+              byAccount.map(({ account, count, value }) => (
+                <div key={account.id || 'none'} className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-ink">
+                      {account.name} <span className="text-muted">· {count} bill{count === 1 ? '' : 's'}</span>
+                    </span>
+                    <span className="text-sm font-semibold text-ink">{formatMoney(value, currency)}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-track">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${Math.max(3, Math.round((value / Math.max(monthlyTotal, 0.0001)) * 100))}%`, background: account.color }}
                     />
                   </div>
                 </div>

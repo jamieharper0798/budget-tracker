@@ -443,6 +443,7 @@ function Dashboard({ uid, email, onLogOut }: DashboardProps) {
           <BillsPage
             enriched={enriched}
             categories={categories}
+            accounts={accounts}
             payments={payments}
             currency={settings.currency}
             onTogglePaid={togglePaid}
