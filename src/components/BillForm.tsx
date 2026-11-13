@@ -11,7 +11,7 @@ interface Props {
   categories: Category[];
   onSave: (input: NewBillInput) => void;
   onCancel: () => void;
-  onAddAccount: (name: string, color: string) => string;
+  onAddAccount: (name: string, color: string, parentAccountId?: string | null) => string;
   onAddCategory: (name: string, icon: string, color: string) => string;
   /** Pre-fills the payment date for a new bill (e.g. from "+ Add bill on this day" on the Calendar). Ignored when editing. */
   initialAnchorDate?: string;
@@ -39,6 +39,7 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
   const [addingAccount, setAddingAccount] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
   const [newAccountColor, setNewAccountColor] = useState(ACCOUNT_COLORS[0]);
+  const [newAccountParentId, setNewAccountParentId] = useState('');
 
   const [addingCategory, setAddingCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -49,9 +50,10 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
 
   const handleAddAccount = () => {
     if (!newAccountName.trim()) return;
-    const id = onAddAccount(newAccountName, newAccountColor);
+    const id = onAddAccount(newAccountName, newAccountColor, newAccountParentId || null);
     setAccountId(id);
     setNewAccountName('');
+    setNewAccountParentId('');
     setAddingAccount(false);
   };
 
@@ -248,6 +250,25 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
                 Cancel
               </button>
             </div>
+            {accounts.filter((a) => !a.parentAccountId).length > 0 && (
+              <div className="mt-2 flex items-center gap-2">
+                <span className="shrink-0 text-xs text-muted">Nest under</span>
+                <select
+                  value={newAccountParentId}
+                  onChange={(e) => setNewAccountParentId(e.target.value)}
+                  className="min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 py-1.5 text-xs text-ink outline-none"
+                >
+                  <option value="">Top-level account (e.g. a bank account)</option>
+                  {accounts
+                    .filter((a) => !a.parentAccountId)
+                    .map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} (as a pot within it)
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
             <div className="mt-2 flex gap-1.5">
               {ACCOUNT_COLORS.map((c) => (
                 <button
