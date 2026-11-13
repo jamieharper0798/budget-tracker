@@ -19,7 +19,7 @@ export function formatMonthYear(iso: string): string {
   });
 }
 
-function ordinal(day: number): string {
+export function ordinal(day: number): string {
   if (day % 10 === 1 && day !== 11) return `${day}st`;
   if (day % 10 === 2 && day !== 12) return `${day}nd`;
   if (day % 10 === 3 && day !== 13) return `${day}rd`;

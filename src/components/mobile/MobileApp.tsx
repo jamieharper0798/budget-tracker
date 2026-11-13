@@ -218,16 +218,12 @@ export function MobileApp({ uid, email, onLogOut }: Props) {
       )}
       {screen === 'bills' && (
         <MobileBills
-          year={year}
-          month={month}
-          billRows={activeBillRows}
-          billsTotal={billsTotal}
-          paidAmt={paidAmt}
-          paidCount={paidCount}
+          bills={activeBills}
+          categories={categories}
+          accounts={accounts}
           currency={settings.currency}
-          today={today}
-          onAddBill={() => setSheet({ kind: 'bill', bill: null })}
-          onTogglePaid={(billId) => togglePaid(billId, period)}
+          monthlyIncome={monthlyIncome}
+          payDay={settings.payDay}
           onEditBill={(bill) => setSheet({ kind: 'bill', bill })}
         />
       )}

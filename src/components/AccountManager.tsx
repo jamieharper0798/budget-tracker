@@ -30,6 +30,15 @@ export function AccountManager({ accounts, billCounts, onAdd, onUpdate, onDelete
     setEditingId(null);
   };
 
+  const handleDelete = (account: Account) => {
+    const count = billCounts[account.id] ?? 0;
+    if (count > 0) {
+      window.alert(`Reassign the ${count} bill${count === 1 ? '' : 's'} on ${account.name} to another account first, then delete it.`);
+      return;
+    }
+    onDelete(account.id);
+  };
+
   const renderRow = (account: Account, indent: boolean) => (
     <div key={account.id} className={`flex items-center gap-2 rounded-xl bg-surface-2 p-2.5 ${indent ? 'ml-6' : ''}`}>
       <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: account.color }} />
@@ -70,7 +79,7 @@ export function AccountManager({ accounts, billCounts, onAdd, onUpdate, onDelete
         {billCounts[account.id] ?? 0} bill{(billCounts[account.id] ?? 0) === 1 ? '' : 's'}
       </span>
       <button
-        onClick={() => onDelete(account.id)}
+        onClick={() => handleDelete(account)}
         className="shrink-0 rounded-full p-1.5 text-muted hover:bg-warn-bg hover:text-alert"
         aria-label={`Delete ${account.name}`}
       >

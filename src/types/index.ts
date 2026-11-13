@@ -34,6 +34,8 @@ export interface Bill {
   paymentsPerYear?: number;
   /** Days before the due date to remind the user. Defaults to 2. */
   reminderDaysBefore?: number;
+  /** Months (1-12) in a year this bill isn't charged, e.g. [2, 3] for council tax's Feb/Mar holiday. */
+  noPaymentMonths?: number[];
 }
 
 export interface Settings {
