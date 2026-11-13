@@ -4,6 +4,8 @@ export interface Account {
   id: string;
   name: string;
   color: string;
+  /** Set when this account is a sub-account (e.g. a pot within a bank account) nested under a top-level one. */
+  parentAccountId?: string | null;
 }
 
 export interface Category {

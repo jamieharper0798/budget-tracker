@@ -193,11 +193,28 @@ export function BillForm({ bill, accounts, categories, onSave, onCancel, onAddAc
               onChange={(e) => setAccountId(e.target.value || null)}
             >
               <option value="">No account set</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
+              {accounts
+                .filter((a) => !a.parentAccountId)
+                .map((parent) => {
+                  const children = accounts.filter((a) => a.parentAccountId === parent.id);
+                  if (children.length === 0) {
+                    return (
+                      <option key={parent.id} value={parent.id}>
+                        {parent.name}
+                      </option>
+                    );
+                  }
+                  return (
+                    <optgroup key={parent.id} label={parent.name}>
+                      <option value={parent.id}>{parent.name} (main)</option>
+                      {children.map((child) => (
+                        <option key={child.id} value={child.id}>
+                          {child.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  );
+                })}
             </select>
             <button
               type="button"

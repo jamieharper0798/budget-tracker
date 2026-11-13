@@ -135,19 +135,24 @@ export function useBudget(uid: string) {
   );
 
   const addAccount = useCallback(
-    (name: string, color: string) => {
-      const account: Account = { id: crypto.randomUUID(), name: name.trim(), color };
+    (name: string, color: string, parentAccountId: string | null = null) => {
+      const account: Account = { id: crypto.randomUUID(), name: name.trim(), color, parentAccountId };
       commit((prev) => ({ ...prev, accounts: [...prev.accounts, account] }));
       return account.id;
     },
     [commit],
   );
 
+  /** `parentAccountId` left out keeps the account's current parent; pass `null` explicitly to make it top-level. */
   const updateAccount = useCallback(
-    (id: string, name: string, color: string) => {
+    (id: string, name: string, color: string, parentAccountId?: string | null) => {
       commit((prev) => ({
         ...prev,
-        accounts: prev.accounts.map((a) => (a.id === id ? { ...a, name: name.trim(), color } : a)),
+        accounts: prev.accounts.map((a) =>
+          a.id === id
+            ? { ...a, name: name.trim(), color, parentAccountId: parentAccountId === undefined ? (a.parentAccountId ?? null) : parentAccountId }
+            : a,
+        ),
       }));
     },
     [commit],
@@ -157,7 +162,10 @@ export function useBudget(uid: string) {
     (id: string) => {
       commit((prev) => ({
         ...prev,
-        accounts: prev.accounts.filter((a) => a.id !== id),
+        // Sub-accounts of a deleted parent become top-level accounts of their own, rather than being orphaned.
+        accounts: prev.accounts
+          .filter((a) => a.id !== id)
+          .map((a) => (a.parentAccountId === id ? { ...a, parentAccountId: null } : a)),
         bills: prev.bills.map((b) => (b.accountId === id ? { ...b, accountId: null } : b)),
       }));
     },

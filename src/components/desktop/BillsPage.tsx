@@ -112,11 +112,22 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
   }, [categories, active]);
 
   const byAccount = useMemo(() => {
+    const valueFor = (accountId: string) => {
+      const bills = active.filter((b) => b.accountId === accountId);
+      return { count: bills.length, value: bills.reduce((s, b) => s + b.monthly, 0) };
+    };
     const rowsByAccount = accounts
-      .map((a) => {
-        const bills = active.filter((b) => b.accountId === a.id);
-        const value = bills.reduce((s, b) => s + b.monthly, 0);
-        return { account: a, count: bills.length, value };
+      .filter((a) => !a.parentAccountId)
+      .map((parent) => {
+        const own = valueFor(parent.id);
+        const children = accounts
+          .filter((a) => a.parentAccountId === parent.id)
+          .map((child) => ({ account: child, ...valueFor(child.id) }))
+          .filter((r) => r.count > 0)
+          .sort((a, b) => b.value - a.value);
+        const count = own.count + children.reduce((s, c) => s + c.count, 0);
+        const value = own.value + children.reduce((s, c) => s + c.value, 0);
+        return { account: parent, count, value, children };
       })
       .filter((r) => r.count > 0)
       .sort((a, b) => b.value - a.value);
@@ -126,6 +137,7 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
         account: { id: '', name: 'No account', color: '#64748b' },
         count: noAccountBills.length,
         value: noAccountBills.reduce((s, b) => s + b.monthly, 0),
+        children: [],
       });
     }
     return rowsByAccount;
@@ -488,7 +500,7 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
             {byAccount.length === 0 ? (
               <p className="text-sm text-muted">No bills linked to an account yet.</p>
             ) : (
-              byAccount.map(({ account, count, value }) => (
+              byAccount.map(({ account, count, value, children }) => (
                 <div key={account.id || 'none'} className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-sm font-medium text-ink">
@@ -502,6 +514,26 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
                       style={{ width: `${Math.max(3, Math.round((value / Math.max(monthlyTotal, 0.0001)) * 100))}%`, background: account.color }}
                     />
                   </div>
+                  {children.length > 0 && (
+                    <div className="ml-4 flex flex-col gap-1.5 border-l border-line pl-3 pt-0.5">
+                      {children.map((c) => (
+                        <div key={c.account.id} className="flex flex-col gap-1">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[13px] text-muted-2">
+                              {c.account.name} <span className="text-muted">· {c.count} bill{c.count === 1 ? '' : 's'}</span>
+                            </span>
+                            <span className="text-[13px] font-semibold text-muted-2">{formatMoney(c.value, currency)}</span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-track">
+                            <div
+                              className="h-full rounded-full"
+                              style={{ width: `${Math.max(3, Math.round((c.value / Math.max(monthlyTotal, 0.0001)) * 100))}%`, background: c.account.color }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))
             )}
