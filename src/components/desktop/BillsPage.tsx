@@ -46,6 +46,7 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
 
   const [status, setStatus] = useState<Status>('All');
   const [cat, setCat] = useState<string>('all');
+  const [acct, setAcct] = useState<string>('all');
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string | null>(enriched[0]?.id ?? null);
   const [sortKey, setSortKey] = useState<'due' | 'cost' | null>(null);
@@ -71,6 +72,15 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
   const paidAmt = paidBills.reduce((s, b) => s + b.monthly, 0);
   const overdueCount = active.filter(isOverdue).length;
 
+  const acctFilterIds = useMemo(() => {
+    if (acct === 'all' || acct === 'none') return null;
+    const selectedAccount = accounts.find((a) => a.id === acct);
+    if (selectedAccount && !selectedAccount.parentAccountId) {
+      return new Set([acct, ...accounts.filter((a) => a.parentAccountId === acct).map((a) => a.id)]);
+    }
+    return new Set([acct]);
+  }, [acct, accounts]);
+
   const rows = useMemo(
     () =>
       enriched.filter((b) => {
@@ -81,11 +91,12 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
           (status === 'Unpaid' && !paid && b.active) ||
           (status === 'Overdue' && isOverdue(b));
         const okCat = cat === 'all' || b.categoryId === cat;
+        const okAcct = acct === 'all' || (acct === 'none' ? !b.accountId : !!b.accountId && acctFilterIds!.has(b.accountId));
         const okQ = !q || b.name.toLowerCase().includes(q.toLowerCase());
-        return okStatus && okCat && okQ;
+        return okStatus && okCat && okAcct && okQ;
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [enriched, status, cat, q, payments, period],
+    [enriched, status, cat, acct, acctFilterIds, q, payments, period],
   );
 
   const sortedRows = useMemo(() => {
@@ -264,6 +275,45 @@ export function BillsPage({ enriched, categories, accounts, payments, currency, 
                 {c.name}
               </button>
             ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Account">
+            <button
+              onClick={() => setAcct('all')}
+              aria-pressed={acct === 'all'}
+              className={`flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium ${
+                acct === 'all' ? 'border-ink bg-ink text-white' : 'border-chip-border bg-surface text-ink'
+              }`}
+            >
+              All accounts
+            </button>
+            {accounts
+              .filter((a) => !a.parentAccountId)
+              .flatMap((parent) => [parent, ...accounts.filter((a) => a.parentAccountId === parent.id)])
+              .map((a) => (
+                <button
+                  key={a.id}
+                  onClick={() => setAcct(a.id)}
+                  aria-pressed={acct === a.id}
+                  className={`flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium ${
+                    acct === a.id ? 'border-ink bg-ink text-white' : 'border-chip-border bg-surface text-ink'
+                  } ${a.parentAccountId ? 'text-muted-2' : ''}`}
+                >
+                  <span className="h-2 w-2 shrink-0 rounded-full" style={{ background: a.color }} />
+                  {a.parentAccountId ? `↳ ${a.name}` : a.name}
+                </button>
+              ))}
+            {active.some((b) => !b.accountId) && (
+              <button
+                onClick={() => setAcct('none')}
+                aria-pressed={acct === 'none'}
+                className={`flex min-h-9 items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium ${
+                  acct === 'none' ? 'border-ink bg-ink text-white' : 'border-chip-border bg-surface text-ink'
+                }`}
+              >
+                No account
+              </button>
+            )}
           </div>
 
           <div className="overflow-x-auto">
