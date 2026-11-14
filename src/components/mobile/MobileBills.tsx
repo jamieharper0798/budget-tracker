@@ -3,6 +3,10 @@ import type { EnrichedBill } from '../../lib/derive';
 import type { Account, Category } from '../../types';
 import { formatMoney, ordinal } from '../../lib/format';
 import { Ring } from '../Ring';
+import { MobileDetailSheet } from './MobileDetailSheet';
+import { AccountDetail, BillShareRows, CategoryDetail, InsightsDetail } from './MobileBillsDetails';
+import { billValue, buildAccountRows, monthName, pctLabel } from './billsInfo';
+import type { AccountSummary, Insight, RankedBill } from './billsInfo';
 
 interface Props {
   bills: EnrichedBill[];
@@ -16,41 +20,57 @@ interface Props {
 
 type View = 'month' | 'year';
 
-const NO_ACCOUNT: Account = { id: '', name: 'No account set', color: '#64748b' };
+type Detail = { kind: 'categories' } | { kind: 'account'; id: string } | { kind: 'insights' } | { kind: 'bills' } | null;
 
-function monthName(m: number): string {
-  return new Date(Date.UTC(2000, m - 1, 1)).toLocaleDateString(undefined, { month: 'long', timeZone: 'UTC' });
+const LEGEND_MAX = 4;
+const INSIGHTS_PREVIEW = 2;
+const BILLS_PREVIEW = 5;
+
+function Chevron() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 text-muted">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
 }
 
-function pctLabel(n: number): string {
-  if (!Number.isFinite(n)) return '0%';
-  return (n < 10 ? n.toFixed(1).replace(/\.0$/, '') : String(Math.round(n))) + '%';
+function DetailsButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-haspopup="dialog"
+      className="flex min-h-9 shrink-0 items-center gap-0.5 rounded-full bg-surface-2 pl-3 pr-2 text-[13px] font-semibold text-ink"
+    >
+      {label}
+      <Chevron />
+    </button>
+  );
 }
 
 export function MobileBills({ bills, categories, accounts, currency, monthlyIncome, payDay, onEditBill }: Props) {
   const [view, setView] = useState<View>('month');
+  const [detail, setDetail] = useState<Detail>(null);
   const isYear = view === 'year';
-  const valueOf = (b: EnrichedBill) => (isYear ? b.yearly : b.monthly);
+  const perLabel = isYear ? 'Per year' : 'Per month';
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const total = useMemo(() => bills.reduce((s, b) => s + valueOf(b), 0), [bills, isYear]);
+  const total = useMemo(() => bills.reduce((s, b) => s + billValue(b, isYear), 0), [bills, isYear]);
   const totalMonthly = useMemo(() => bills.reduce((s, b) => s + b.monthly, 0), [bills]);
   const totalYearly = useMemo(() => bills.reduce((s, b) => s + b.yearly, 0), [bills]);
   const income = isYear ? monthlyIncome * 12 : monthlyIncome;
   const incomeShare = income > 0 ? (total / income) * 100 : 0;
-  const topLevelAccounts = useMemo(() => accounts.filter((a) => !a.parentAccountId), [accounts]);
+  const topLevelCount = accounts.filter((a) => !a.parentAccountId).length;
+  const potCount = accounts.length - topLevelCount;
 
   const catRows = useMemo(
     () =>
       categories
         .map((c) => {
           const list = bills.filter((b) => b.categoryId === c.id);
-          const v = list.reduce((s, b) => s + valueOf(b), 0);
+          const v = list.reduce((s, b) => s + billValue(b, isYear), 0);
           return { category: c, list, v, share: total > 0 ? (v / total) * 100 : 0 };
         })
         .filter((r) => r.list.length > 0)
         .sort((a, b) => b.v - a.v),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [bills, categories, total, isYear],
   );
 
@@ -66,63 +86,28 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
     return `conic-gradient(${stops.join(', ')})`;
   }, [catRows, total]);
 
-  const accRows = useMemo(() => {
-    const summarize = (account: Account, list: EnrichedBill[]) => {
-      const sorted = list.slice().sort((x, y) => x.nextDue.getTime() - y.nextDue.getTime());
-      const v = sorted.reduce((s, b) => s + valueOf(b), 0);
-      const regular = sorted.filter((b) => b.frequency !== 'yearly');
-      const monthlyOut = regular.reduce((s, b) => s + b.monthly, 0);
-      const byDay = new Map<number, number>();
-      for (const b of regular) {
-        const d = b.nextDue.getUTCDate();
-        byDay.set(d, (byDay.get(d) ?? 0) + b.monthly);
-      }
-      let bigDay: number | null = null;
-      let bigDayAmt = 0;
-      for (const [d, amt] of byDay) {
-        if (amt > bigDayAmt) {
-          bigDay = d;
-          bigDayAmt = amt;
-        }
-      }
-      return { account, list: sorted, v, share: total > 0 ? (v / total) * 100 : 0, monthlyOut, bigDay, bigDayAmt, firstDue: regular[0] ?? null };
-    };
+  const accRows = useMemo(() => buildAccountRows(bills, accounts, isYear, total), [bills, accounts, isYear, total]);
 
-    const rows = topLevelAccounts
-      .map((a) => {
-        const childIds = accounts.filter((x) => x.parentAccountId === a.id).map((x) => x.id);
-        const list = bills.filter((b) => b.accountId === a.id || (!!b.accountId && childIds.includes(b.accountId)));
-        return summarize(a, list);
-      })
-      .filter((r) => r.list.length > 0)
-      .sort((a, b) => b.v - a.v);
-
-    const noAccountList = bills.filter((b) => !b.accountId);
-    if (noAccountList.length > 0) rows.push(summarize(NO_ACCOUNT, noAccountList));
-    return rows;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [bills, accounts, topLevelAccounts, total, isYear]);
-
-  const rankedBills = useMemo(
+  const rankedBills: RankedBill[] = useMemo(
     () =>
       bills
         .slice()
-        .sort((a, b) => valueOf(b) - valueOf(a))
+        .sort((a, b) => billValue(b, isYear) - billValue(a, isYear))
         .map((b) => ({
           bill: b,
           category: categories.find((c) => c.id === b.categoryId) ?? null,
           account: accounts.find((a) => a.id === b.accountId) ?? null,
-          share: total > 0 ? (valueOf(b) / total) * 100 : 0,
+          share: total > 0 ? (billValue(b, isYear) / total) * 100 : 0,
         })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [bills, categories, accounts, total, isYear],
   );
 
   const insights = useMemo(() => {
-    const list: { icon: string; iconClass: string; title: string; body: string }[] = [];
+    const list: Insight[] = [];
 
-    const realAccRows = accRows.filter((r) => r.account.id);
-    const biggestAcc = realAccRows.slice().sort((a, b) => b.monthlyOut - a.monthlyOut)[0];
+    // Money has to be in the pot a bill is paid from, so compare pots (and pot-less accounts), not rolled-up parents.
+    const payFrom: AccountSummary[] = accRows.filter((r) => r.account.id).flatMap((r) => (r.children.length > 0 ? [...r.children, ...(r.own ? [r.own] : [])] : [r]));
+    const biggestAcc = payFrom.slice().sort((a, b) => b.monthlyOut - a.monthlyOut)[0];
     if (payDay && biggestAcc && biggestAcc.firstDue && biggestAcc.monthlyOut > 0) {
       list.push({
         icon: '→',
@@ -188,8 +173,22 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
     }
 
     return list;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bills, accRows, categories, accounts, payDay, monthlyIncome, totalMonthly, currency]);
+
+  const editFromDetail = (bill: EnrichedBill) => {
+    setDetail(null);
+    onEditBill(bill);
+  };
+
+  const openAccount = (() => {
+    if (detail?.kind !== 'account') return null;
+    for (const r of accRows) {
+      if (r.account.id === detail.id) return { summary: r as AccountSummary, row: r, parent: null };
+      const child = r.children.find((c) => c.account.id === detail.id);
+      if (child) return { summary: child, row: null, parent: r };
+    }
+    return null;
+  })();
 
   return (
     <main
@@ -197,15 +196,28 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
       style={{ paddingTop: 'calc(env(safe-area-inset-top, 20px) + 14px)', paddingBottom: 'calc(60px + env(safe-area-inset-bottom, 0px) + 24px)' }}
     >
       <div className="flex items-end justify-between gap-3 px-1">
-        <div className="flex flex-col gap-0.5">
-          <span className="text-sm font-medium text-muted">
-            {bills.length} bill{bills.length === 1 ? '' : 's'} · {topLevelAccounts.length} account{topLevelAccounts.length === 1 ? '' : 's'}
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="truncate text-sm font-medium text-muted">
+            {bills.length} bill{bills.length === 1 ? '' : 's'} · {topLevelCount} account{topLevelCount === 1 ? '' : 's'}
+            {potCount > 0 ? ` · ${potCount} pot${potCount === 1 ? '' : 's'}` : ''}
           </span>
           <h1 className="font-display text-[34px] font-semibold tracking-tight text-ink">Bills</h1>
         </div>
-        <div className="flex gap-[3px] rounded-xl bg-chip-border p-[3px]" role="group" aria-label="Show amounts per">
-          <button onClick={() => setView('month')} aria-pressed={view === 'month'} className={`min-h-9 rounded-[9px] px-3 text-[13px] ${view === 'month' ? 'bg-surface font-semibold text-ink shadow-[0_1px_3px_rgba(14,17,22,.12)]' : 'font-medium text-muted-2'}`}>Month</button>
-          <button onClick={() => setView('year')} aria-pressed={view === 'year'} className={`min-h-9 rounded-[9px] px-3 text-[13px] ${view === 'year' ? 'bg-surface font-semibold text-ink shadow-[0_1px_3px_rgba(14,17,22,.12)]' : 'font-medium text-muted-2'}`}>Year</button>
+        <div className="flex shrink-0 gap-[3px] rounded-xl bg-chip-border p-[3px]" role="group" aria-label="Show amounts per">
+          <button
+            onClick={() => setView('month')}
+            aria-pressed={view === 'month'}
+            className={`min-h-9 rounded-[9px] px-3 text-[13px] ${view === 'month' ? 'bg-surface font-semibold text-ink shadow-[0_1px_3px_rgba(14,17,22,.12)]' : 'font-medium text-muted-2'}`}
+          >
+            Month
+          </button>
+          <button
+            onClick={() => setView('year')}
+            aria-pressed={view === 'year'}
+            className={`min-h-9 rounded-[9px] px-3 text-[13px] ${view === 'year' ? 'bg-surface font-semibold text-ink shadow-[0_1px_3px_rgba(14,17,22,.12)]' : 'font-medium text-muted-2'}`}
+          >
+            Year
+          </button>
         </div>
       </div>
 
@@ -240,166 +252,196 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
           </div>
           <div className="flex flex-col gap-1 rounded-[14px] bg-ink-2 px-3 py-2.5">
             <span className="text-xs text-muted-on-ink">Left of pay</span>
-            <span className="text-sm font-semibold">{formatMoney(income - total, currency, 0)}</span>
+            <span className="text-sm font-semibold">
+              {income - total < 0 ? '−' : ''}
+              {formatMoney(income - total, currency, 0)}
+            </span>
           </div>
         </div>
       </section>
 
       <section className="card flex flex-col gap-4 p-[18px]">
-        <div className="flex flex-col gap-0.5">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="font-display text-lg font-semibold text-ink">Where it goes</h2>
-          <span className="text-[13px] text-muted">Share of your bills, and of your take-home pay</span>
+          {catRows.length > 0 && <DetailsButton label="Breakdown" onClick={() => setDetail({ kind: 'categories' })} />}
         </div>
         {catRows.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted">No categorized bills yet.</p>
         ) : (
-          <>
-            <div className="flex items-center gap-4">
-              <Ring size={128} innerSize={88} background={donutBg} label={catRows.map((r) => `${r.category.name} ${pctLabel(r.share)}`).join(', ')}>
-                <span className="font-display text-base font-semibold text-ink">{formatMoney(total, currency, 0)}</span>
-                <span className="text-[11px] text-muted">{isYear ? 'a year' : 'a month'}</span>
-              </Ring>
-              <div className="flex min-w-0 flex-1 flex-col gap-2.5">
-                {catRows.map((r) => (
-                  <div key={r.category.id} className="flex items-baseline gap-2">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ background: r.category.color }} />
-                    <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{r.category.name}</span>
-                    <span className="font-display text-[17px] font-semibold text-ink">{pctLabel(r.share)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex flex-col">
-              {catRows.map((r) => (
-                <div key={r.category.id} className="flex items-center gap-3 border-t border-line py-2.5 first:border-t-0">
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold text-ink">{r.category.name}</span>
-                    <span className="block truncate text-[13px] text-muted">{r.list.map((b) => b.name).join(', ')}</span>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <span className="block text-sm font-semibold text-ink">{formatMoney(r.v, currency)}</span>
-                    <span className="block text-xs text-muted">{pctLabel(income > 0 ? (r.v / income) * 100 : 0)} of income</span>
-                  </div>
+          <div className="flex items-center gap-4">
+            <Ring size={128} innerSize={88} background={donutBg} label={catRows.map((r) => `${r.category.name} ${pctLabel(r.share)}`).join(', ')}>
+              <span className="font-display text-base font-semibold text-ink">{formatMoney(total, currency, 0)}</span>
+              <span className="text-[11px] text-muted">{isYear ? 'a year' : 'a month'}</span>
+            </Ring>
+            <div className="flex min-w-0 flex-1 flex-col gap-2.5">
+              {catRows.slice(0, LEGEND_MAX).map((r) => (
+                <div key={r.category.id} className="flex items-baseline gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ background: r.category.color }} />
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{r.category.name}</span>
+                  <span className="font-display text-[17px] font-semibold text-ink">{pctLabel(r.share)}</span>
                 </div>
               ))}
+              {catRows.length > LEGEND_MAX && <span className="text-[13px] text-muted">+ {catRows.length - LEGEND_MAX} more</span>}
             </div>
-          </>
+          </div>
         )}
       </section>
 
-      <section className="flex flex-col gap-2.5">
-        <div className="flex flex-col gap-0.5 px-1">
+      <section className="card flex flex-col gap-3.5 p-[18px]">
+        <div className="flex flex-col gap-0.5">
           <h2 className="font-display text-lg font-semibold text-ink">From each account</h2>
-          <span className="text-[13px] text-muted">Which account your bills come out of</span>
+          {accRows.length > 0 && <span className="text-[13px] text-muted">Tap an account or pot for its bills and dates</span>}
         </div>
         {accRows.length === 0 ? (
-          <p className="card p-[18px] py-6 text-center text-sm text-muted">No bills linked to an account yet.</p>
+          <p className="py-4 text-center text-sm text-muted">No bills linked to an account yet.</p>
         ) : (
           <>
-            <div className="flex flex-col gap-2.5 rounded-[20px] bg-surface px-4 py-3.5">
-              <div className="flex h-3.5 gap-[3px]" role="img" aria-label={accRows.map((r) => `${r.account.name} ${pctLabel(r.share)}`).join(', ')}>
-                {accRows.map((r) => (
-                  <span key={r.account.id || 'none'} className="h-full rounded" style={{ flex: `${Math.max(r.v, 0.0001)} 1 0`, background: r.account.color }} />
-                ))}
-              </div>
-              <div className="flex flex-wrap gap-x-3.5 gap-y-1.5">
-                {accRows.map((r) => (
-                  <span key={r.account.id || 'none'} className="flex items-center gap-1.5 text-[13px] text-muted-2">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ background: r.account.color }} />
-                    {r.account.name} <strong className="font-semibold text-ink">{pctLabel(r.share)}</strong>
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2.5">
+            <div className="flex h-3.5 gap-[3px]" role="img" aria-label={accRows.map((r) => `${r.account.name} ${pctLabel(r.share)}`).join(', ')}>
               {accRows.map((r) => (
-                <article key={r.account.id || 'none'} className="card flex flex-col gap-3.5 p-[18px]">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-base font-bold" style={{ background: `${r.account.color}22`, color: r.account.color }}>
+                <span key={r.account.id || 'none'} className="h-full rounded" style={{ flex: `${Math.max(r.v, 0.0001)} 1 0`, background: r.account.color }} />
+              ))}
+            </div>
+            <div className="flex flex-col">
+              {accRows.map((r) => (
+                <div key={r.account.id || 'none'} className="flex flex-col border-t border-line py-1 first:border-t-0">
+                  <button
+                    onClick={() => setDetail({ kind: 'account', id: r.account.id })}
+                    aria-haspopup="dialog"
+                    className="flex min-h-[56px] items-center gap-3 text-left"
+                  >
+                    <span
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[13px] text-[15px] font-bold"
+                      style={{ background: `${r.account.color}22`, color: r.account.color }}
+                    >
                       {r.account.name[0]?.toUpperCase() ?? '?'}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <h3 className="truncate text-[16px] font-semibold text-ink">{r.account.name}</h3>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-semibold text-ink">{r.account.name}</span>
                       <span className="block truncate text-[13px] text-muted">
-                        {r.list.length} bill{r.list.length === 1 ? '' : 's'} · {formatMoney(r.monthlyOut, currency, 0)} leaves monthly
+                        {r.list.length} bill{r.list.length === 1 ? '' : 's'} · {pctLabel(r.share)} of bills
                       </span>
+                    </span>
+                    <span className="shrink-0 font-display text-[17px] font-semibold text-ink">{formatMoney(r.v, currency, 0)}</span>
+                    <Chevron />
+                  </button>
+                  {r.children.length > 0 && (
+                    <div className="mb-1 ml-[19px] flex flex-col border-l-2 border-line pl-[19px]">
+                      {r.children.map((c) => (
+                        <button
+                          key={c.account.id}
+                          onClick={() => setDetail({ kind: 'account', id: c.account.id })}
+                          aria-haspopup="dialog"
+                          className="flex min-h-11 items-center gap-2.5 text-left"
+                        >
+                          <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ background: c.account.color }} />
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-ink">{c.account.name}</span>
+                          <span className="shrink-0 text-[13px] text-muted">
+                            {c.list.length} bill{c.list.length === 1 ? '' : 's'}
+                          </span>
+                          <span className="min-w-[52px] shrink-0 text-right text-sm font-semibold text-ink">{formatMoney(c.v, currency, 0)}</span>
+                          <Chevron />
+                        </button>
+                      ))}
+                      {r.own && (
+                        <div className="flex min-h-11 items-center gap-2.5 pr-[26px]">
+                          <span className="h-2.5 w-2.5 shrink-0 rounded bg-track" />
+                          <span className="min-w-0 flex-1 truncate text-sm text-muted-2">Not in a pot</span>
+                          <span className="shrink-0 text-[13px] text-muted">
+                            {r.own.list.length} bill{r.own.list.length === 1 ? '' : 's'}
+                          </span>
+                          <span className="min-w-[52px] shrink-0 text-right text-sm font-semibold text-ink">{formatMoney(r.own.v, currency, 0)}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="shrink-0 text-right">
-                      <span className="block font-display text-[18px] font-semibold text-ink">
-                        {formatMoney(r.v, currency, 0)}{isYear ? '/yr' : '/mo'}
-                      </span>
-                      <span className="block text-xs text-muted">{pctLabel(r.share)} of bills</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {r.list.map((b) => (
-                      <button key={b.id} onClick={() => onEditBill(b)} className="rounded-full bg-surface-2 px-2.5 py-1 text-[13px] font-medium text-ink">
-                        {b.name} · {ordinal(b.nextDue.getUTCDate())}{b.frequency === 'yearly' ? ` ${monthName(b.nextDue.getUTCMonth() + 1).slice(0, 3)}` : ''}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div className="flex flex-col gap-0.5 rounded-[14px] bg-surface-3 px-3 py-2.5">
-                      <span className="text-xs text-muted">Biggest day</span>
-                      <span className="text-sm font-semibold text-ink">{r.bigDay != null ? `${ordinal(r.bigDay)} · ${formatMoney(r.bigDayAmt, currency)}` : '—'}</span>
-                    </div>
-                    <div className="flex flex-col gap-0.5 rounded-[14px] bg-surface-3 px-3 py-2.5">
-                      <span className="text-xs text-muted">Have in by</span>
-                      <span className="text-sm font-semibold text-ink">{r.firstDue ? `${formatMoney(r.monthlyOut, currency, 0)} by ${ordinal(r.firstDue.nextDue.getUTCDate())}` : '—'}</span>
-                    </div>
-                  </div>
-                </article>
+                  )}
+                </div>
               ))}
             </div>
           </>
         )}
       </section>
 
-      <section className="flex flex-col gap-2.5">
-        <h2 className="px-1 font-display text-lg font-semibold text-ink">Insights</h2>
-        <div className="flex flex-col gap-2.5">
-          {insights.length === 0 ? (
-            <p className="card p-[18px] py-6 text-center text-sm text-muted">Add a few more bills to see insights here.</p>
-          ) : (
-            insights.map((ins, i) => (
-              <div key={i} className="flex items-start gap-3 rounded-[20px] bg-surface px-4 py-3.5">
-                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-bold ${ins.iconClass}`}>{ins.icon}</span>
-                <div className="flex min-w-0 flex-col gap-0.5">
-                  <span className="text-sm font-semibold text-ink">{ins.title}</span>
-                  <p className="text-sm leading-snug text-muted">{ins.body}</p>
-                </div>
-              </div>
-            ))
+      <section className="card flex flex-col gap-2 p-[18px]">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="font-display text-lg font-semibold text-ink">Insights</h2>
+          {insights.length > 0 && (
+            <DetailsButton label={insights.length > INSIGHTS_PREVIEW ? `All ${insights.length}` : 'Read'} onClick={() => setDetail({ kind: 'insights' })} />
           )}
         </div>
+        {insights.length === 0 ? (
+          <p className="py-4 text-center text-sm text-muted">Add a few more bills to see insights here.</p>
+        ) : (
+          <div className="flex flex-col">
+            {insights.slice(0, INSIGHTS_PREVIEW).map((ins, i) => (
+              <button
+                key={i}
+                onClick={() => setDetail({ kind: 'insights' })}
+                aria-haspopup="dialog"
+                className="flex min-h-[52px] items-center gap-3 border-t border-line py-2 text-left first:border-t-0"
+              >
+                <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] text-sm font-bold ${ins.iconClass}`}>{ins.icon}</span>
+                <span className="line-clamp-2 min-w-0 flex-1 text-sm font-semibold leading-snug text-ink">{ins.title}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="card flex flex-col gap-1 p-[18px]">
-        <div className="mb-1 flex items-baseline justify-between gap-2">
-          <h2 className="font-display text-lg font-semibold text-ink">Every bill, by share</h2>
-          <span className="text-[13px] text-muted">{isYear ? 'Per year' : 'Per month'}</span>
+        <div className="mb-1 flex items-center justify-between gap-3">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <h2 className="font-display text-lg font-semibold text-ink">Biggest bills</h2>
+            <span className="text-[13px] text-muted">{perLabel}, by share of the total</span>
+          </div>
+          {rankedBills.length > BILLS_PREVIEW && <DetailsButton label={`All ${rankedBills.length}`} onClick={() => setDetail({ kind: 'bills' })} />}
         </div>
         {rankedBills.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted">No bills yet.</p>
         ) : (
-          rankedBills.map(({ bill, category, account, share }) => (
-            <button key={bill.id} onClick={() => onEditBill(bill)} className="flex flex-col gap-1.5 border-t border-line py-2.5 text-left first:border-t-0">
-              <div className="flex items-center gap-2.5">
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold text-ink">{bill.name}</span>
-                  <span className="block truncate text-xs text-muted">{category?.name ?? 'Uncategorized'} · {account?.name ?? 'No account set'}</span>
-                </span>
-                <span className="shrink-0 text-sm font-semibold text-ink">{formatMoney(valueOf(bill), currency)}</span>
-                <span className="min-w-[40px] shrink-0 text-right font-display text-sm font-semibold text-muted-2">{pctLabel(share)}</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-track">
-                <div className="h-full rounded-full" style={{ width: `${Math.max(1.5, share)}%`, background: category?.color ?? '#64748b' }} />
-              </div>
-            </button>
-          ))
+          <BillShareRows ranked={rankedBills.slice(0, BILLS_PREVIEW)} currency={currency} isYear={isYear} onEditBill={onEditBill} />
         )}
       </section>
+
+      {detail?.kind === 'categories' && (
+        <MobileDetailSheet title="Where it goes" subtitle={`${perLabel} · ${formatMoney(total, currency, 0)}`} onClose={() => setDetail(null)}>
+          <CategoryDetail rows={catRows} income={income} currency={currency} isYear={isYear} onEditBill={editFromDetail} />
+        </MobileDetailSheet>
+      )}
+
+      {openAccount && (
+        <MobileDetailSheet
+          title={openAccount.summary.account.name}
+          subtitle={openAccount.parent ? `Pot in ${openAccount.parent.account.name}` : perLabel}
+          backLabel={openAccount.parent?.account.name}
+          onBack={openAccount.parent ? () => setDetail({ kind: 'account', id: openAccount.parent.account.id }) : undefined}
+          onClose={() => setDetail(null)}
+          contentKey={openAccount.summary.account.id}
+        >
+          <AccountDetail
+            summary={openAccount.summary}
+            row={openAccount.row}
+            accounts={accounts}
+            currency={currency}
+            isYear={isYear}
+            onOpenAccount={(id) => setDetail({ kind: 'account', id })}
+            onEditBill={editFromDetail}
+          />
+        </MobileDetailSheet>
+      )}
+
+      {detail?.kind === 'insights' && (
+        <MobileDetailSheet title="Insights" subtitle="Worked out from your bills" onClose={() => setDetail(null)}>
+          <InsightsDetail insights={insights} />
+        </MobileDetailSheet>
+      )}
+
+      {detail?.kind === 'bills' && (
+        <MobileDetailSheet title="Every bill, by share" subtitle={`${perLabel} · ${rankedBills.length} bills`} onClose={() => setDetail(null)}>
+          <div className="rounded-[20px] bg-surface px-4 py-1.5">
+            <BillShareRows ranked={rankedBills} currency={currency} isYear={isYear} onEditBill={editFromDetail} />
+          </div>
+        </MobileDetailSheet>
+      )}
     </main>
   );
 }

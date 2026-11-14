@@ -132,11 +132,64 @@ input[type='date']::-webkit-calendar-picker-indicator {
     background 0.18s;
 }
 
+/* Detail pop-up on the mobile Bills screen. No forwards fill on the way in, so a drag can move the sheet afterwards. */
+@keyframes m-detail-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes m-detail-down {
+  from {
+    transform: translateY(var(--m-detail-from, 0px));
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes m-detail-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes m-detail-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes m-detail-body-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+.m-detail-sheet {
+  animation: m-detail-up 0.36s cubic-bezier(0.2, 0.9, 0.25, 1);
+  transition: transform 0.2s ease-out;
+}
+.m-detail-sheet.is-closing {
+  animation: m-detail-down 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.m-detail-scrim {
+  animation: m-detail-fade-in 0.25s ease-out;
+}
+.m-detail-scrim.is-closing {
+  animation: m-detail-fade-out 0.22s ease-in forwards;
+}
+.m-detail-body {
+  animation: m-detail-body-in 0.28s ease-out 0.06s backwards;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .m-sheet,
   .m-scrim,
   .m-swipe-content,
   .m-switch-knob {
+    transition: none !important;
+  }
+  .m-detail-sheet,
+  .m-detail-scrim,
+  .m-detail-body {
+    animation: none !important;
     transition: none !important;
   }
 }
