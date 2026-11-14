@@ -20,7 +20,8 @@ interface Props {
 
 type View = 'month' | 'year';
 
-type Detail = { kind: 'categories' } | { kind: 'account'; id: string } | { kind: 'insights' } | { kind: 'bills' } | null;
+/** `own` narrows an account to the bills paid straight from it, leaving out its pots. */
+type Detail = { kind: 'categories' } | { kind: 'account'; id: string; own?: boolean } | { kind: 'insights' } | { kind: 'bills' } | null;
 
 const LEGEND_MAX = 4;
 const INSIGHTS_PREVIEW = 2;
@@ -183,9 +184,10 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
   const openAccount = (() => {
     if (detail?.kind !== 'account') return null;
     for (const r of accRows) {
-      if (r.account.id === detail.id) return { summary: r as AccountSummary, row: r, parent: null };
+      if (r.account.id === detail.id && detail.own && r.own) return { summary: r.own, row: null, parent: r, own: true };
+      if (r.account.id === detail.id) return { summary: r as AccountSummary, row: r, parent: null, own: false };
       const child = r.children.find((c) => c.account.id === detail.id);
-      if (child) return { summary: child, row: null, parent: r };
+      if (child) return { summary: child, row: null, parent: r, own: false };
     }
     return null;
   })();
@@ -343,14 +345,19 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
                         </button>
                       ))}
                       {r.own && (
-                        <div className="flex min-h-11 items-center gap-2.5 pr-[26px]">
+                        <button
+                          onClick={() => setDetail({ kind: 'account', id: r.account.id, own: true })}
+                          aria-haspopup="dialog"
+                          className="flex min-h-11 items-center gap-2.5 text-left"
+                        >
                           <span className="h-2.5 w-2.5 shrink-0 rounded bg-track" />
-                          <span className="min-w-0 flex-1 truncate text-sm text-muted-2">Not in a pot</span>
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium text-muted-2">Not in a pot</span>
                           <span className="shrink-0 text-[13px] text-muted">
                             {r.own.list.length} bill{r.own.list.length === 1 ? '' : 's'}
                           </span>
                           <span className="min-w-[52px] shrink-0 text-right text-sm font-semibold text-ink">{formatMoney(r.own.v, currency, 0)}</span>
-                        </div>
+                          <Chevron />
+                        </button>
                       )}
                     </div>
                   )}
@@ -410,12 +417,12 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
 
       {openAccount && (
         <MobileDetailSheet
-          title={openAccount.summary.account.name}
-          subtitle={openAccount.parent ? `Pot in ${openAccount.parent.account.name}` : perLabel}
+          title={openAccount.own ? 'Not in a pot' : openAccount.summary.account.name}
+          subtitle={openAccount.own ? `Straight from ${openAccount.summary.account.name}` : openAccount.parent ? `Pot in ${openAccount.parent.account.name}` : perLabel}
           backLabel={openAccount.parent?.account.name}
           onBack={openAccount.parent ? () => setDetail({ kind: 'account', id: openAccount.parent.account.id }) : undefined}
           onClose={() => setDetail(null)}
-          contentKey={openAccount.summary.account.id}
+          contentKey={`${openAccount.summary.account.id}${openAccount.own ? ':own' : ''}`}
         >
           <AccountDetail
             summary={openAccount.summary}
@@ -424,6 +431,7 @@ export function MobileBills({ bills, categories, accounts, currency, monthlyInco
             currency={currency}
             isYear={isYear}
             onOpenAccount={(id) => setDetail({ kind: 'account', id })}
+            onOpenOwn={(id) => setDetail({ kind: 'account', id, own: true })}
             onEditBill={editFromDetail}
           />
         </MobileDetailSheet>

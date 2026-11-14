@@ -63,10 +63,12 @@ interface AccountDetailProps {
   currency: string;
   isYear: boolean;
   onOpenAccount: (id: string) => void;
+  /** Opens the bills paid straight from this account, leaving out its pots. */
+  onOpenOwn: (id: string) => void;
   onEditBill: (bill: EnrichedBill) => void;
 }
 
-export function AccountDetail({ summary, row, accounts, currency, isYear, onOpenAccount, onEditBill }: AccountDetailProps) {
+export function AccountDetail({ summary, row, accounts, currency, isYear, onOpenAccount, onOpenOwn, onEditBill }: AccountDetailProps) {
   const pots = row?.children ?? [];
   const potName = (bill: EnrichedBill) =>
     pots.length > 0 && bill.accountId !== summary.account.id ? (accounts.find((a) => a.id === bill.accountId)?.name ?? null) : null;
@@ -133,13 +135,18 @@ export function AccountDetail({ summary, row, accounts, currency, isYear, onOpen
             </button>
           ))}
           {row.own && (
-            <div className="flex min-h-11 items-center gap-2.5 border-t border-line py-2">
-              <span className="h-2.5 w-2.5 shrink-0 rounded" style={{ background: row.account.color }} />
-              <span className="min-w-0 flex-1 truncate text-sm text-muted-2">
-                Not in a pot · {row.own.list.length} bill{row.own.list.length === 1 ? '' : 's'}
+            <button onClick={() => onOpenOwn(row.account.id)} className="flex min-h-[52px] items-center gap-2.5 border-t border-line py-2 text-left">
+              <span className="h-2.5 w-2.5 shrink-0 rounded bg-track" />
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold text-ink">Not in a pot</span>
+                <span className="block truncate text-xs text-muted">
+                  {row.own.list.length} bill{row.own.list.length === 1 ? '' : 's'}
+                  {row.own.firstDue ? ` · ${formatMoney(row.own.monthlyOut, currency, 0)} in by the ${ordinal(row.own.firstDue.nextDue.getUTCDate())}` : ''}
+                </span>
               </span>
               <span className="shrink-0 text-sm font-semibold text-ink">{formatMoney(row.own.v, currency)}</span>
-            </div>
+              <Chevron />
+            </button>
           )}
         </section>
       )}
